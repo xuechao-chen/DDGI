@@ -1,344 +1,321 @@
 #include "IrradianceField.h"
 #include "IrradianceProbeSamplingSettings.h"
-#include "GIMode.h"
 #include "GIRenderer.h"
 #include "App.h"
 
 /** How much should the probes count when shading *themselves*? 1.0 preserves
-    energy perfectly. Lower numbers compensate for small leaks/precision by avoiding
-    recursive energy explosion. */
+	energy perfectly. Lower numbers compensate for small leaks/precision by avoiding
+	recursive energy explosion. */
 static const float recursiveEnergyPreservation = 0.85f;
 
-const Array<const ImageFormat*> IrradianceField::s_irradianceFormats = { 
-    ImageFormat::RGB5A1(), 
-    ImageFormat::RGB8(), 
-    ImageFormat::RGB10A2(), 
-    ImageFormat::R11G11B10F(), 
-    ImageFormat::RGB16F(), 
-    ImageFormat::RGB32F() };
+const Array<const ImageFormat*> IrradianceField::s_irradianceFormats = {
+	ImageFormat::RGB5A1(),
+	ImageFormat::RGB8(),
+	ImageFormat::RGB10A2(),
+	ImageFormat::R11G11B10F(),
+	ImageFormat::RGB16F(),
+	ImageFormat::RGB32F() };
 
-const Array<const ImageFormat*> IrradianceField::s_depthFormats = { 
-    ImageFormat::RGB8(), 
-    ImageFormat::RG16F(), 
-    ImageFormat::RG32F() };
+const Array<const ImageFormat*> IrradianceField::s_depthFormats = {
+	ImageFormat::RGB8(),
+	ImageFormat::RG16F(),
+	ImageFormat::RG32F() };
 
-IrradianceField::Specification::Specification() {
-}
-
+IrradianceField::Specification::Specification() {}
 
 Any IrradianceField::Specification::toAny() const {
-    Any a(Any::TABLE, "IrradianceField::Specification");
-    a["probeDimensions"]            = probeDimensions;
-    a["probeCounts"]                = probeCounts;
-    a["irradianceOctResolution"]    = irradianceOctResolution;
-    a["depthOctResolution"]         = depthOctResolution;
-    a["irradianceDistanceBias"]     = irradianceDistanceBias;
-    a["irradianceVarianceBias"]     = irradianceVarianceBias;
-    a["irradianceChebyshevBias"]    = irradianceChebyshevBias;
-	a["normalBias"]                 = normalBias;
-	a["hysteresis"]                 = hysteresis;
-	a["depthSharpness"]             = depthSharpness;
-	a["irradianceRaysPerProbe"]     = irradianceRaysPerProbe;
-    a["glossyToMatte"]              = glossyToMatte;
-    a["singleBounce"]               = singleBounce;
-    a["irradianceFormatIndex"]      = irradianceFormatIndex;
-    a["depthFormatIndex"]           = depthFormatIndex;
-    a["showLights"]                 = singleBounce;
-    a["encloseBounds"]              = encloseBounds;
-    return a;
+	Any a(Any::TABLE, "IrradianceField::Specification");
+	a["probeDimensions"] = probeDimensions;
+	a["probeCounts"] = probeCounts;
+	a["irradianceOctResolution"] = irradianceOctResolution;
+	a["depthOctResolution"] = depthOctResolution;
+	a["irradianceDistanceBias"] = irradianceDistanceBias;
+	a["irradianceVarianceBias"] = irradianceVarianceBias;
+	a["irradianceChebyshevBias"] = irradianceChebyshevBias;
+	a["normalBias"] = normalBias;
+	a["hysteresis"] = hysteresis;
+	a["depthSharpness"] = depthSharpness;
+	a["irradianceRaysPerProbe"] = irradianceRaysPerProbe;
+	a["glossyToMatte"] = glossyToMatte;
+	a["singleBounce"] = singleBounce;
+	a["irradianceFormatIndex"] = irradianceFormatIndex;
+	a["depthFormatIndex"] = depthFormatIndex;
+	a["showLights"] = singleBounce;
+	a["encloseBounds"] = encloseBounds;
+	return a;
 }
 
-
-IrradianceField::Specification::Specification(const Any& any) {
-    *this = IrradianceField::Specification();
-    AnyTableReader reader("IrradianceField::Specification", any);
-    reader.getIfPresent("probeDimensions", probeDimensions);
-    reader.getIfPresent("probeCounts", probeCounts);
-    reader.getIfPresent("irradianceOctResolution", irradianceOctResolution);
-    reader.getIfPresent("depthOctResolution", depthOctResolution);
-    reader.getIfPresent("irradianceDistanceBias", irradianceDistanceBias);
-    reader.getIfPresent("irradianceVarianceBias", irradianceVarianceBias);
+IrradianceField::Specification::Specification(const Any& any) 
+{
+	*this = IrradianceField::Specification();
+	AnyTableReader reader("IrradianceField::Specification", any);
+	reader.getIfPresent("probeDimensions", probeDimensions);
+	reader.getIfPresent("probeCounts", probeCounts);
+	reader.getIfPresent("irradianceOctResolution", irradianceOctResolution);
+	reader.getIfPresent("depthOctResolution", depthOctResolution);
+	reader.getIfPresent("irradianceDistanceBias", irradianceDistanceBias);
+	reader.getIfPresent("irradianceVarianceBias", irradianceVarianceBias);
 	reader.getIfPresent("irradianceChebyshevBias", irradianceChebyshevBias);
 	reader.getIfPresent("normalBias", normalBias);
 	reader.getIfPresent("hysteresis", hysteresis);
 	reader.getIfPresent("depthSharpness", depthSharpness);
 	reader.getIfPresent("irradianceRaysPerProbe", irradianceRaysPerProbe);
-    reader.getIfPresent("glossyToMatte", glossyToMatte);
-    reader.getIfPresent("singleBounce", singleBounce);
-    reader.getIfPresent("irradianceFormatIndex", irradianceFormatIndex);
-    reader.getIfPresent("depthFormatIndex", depthFormatIndex);
-    reader.getIfPresent("showLights", showLights);
-    reader.getIfPresent("encloseBounds", encloseBounds);
-    reader.verifyDone();
+	reader.getIfPresent("glossyToMatte", glossyToMatte);
+	reader.getIfPresent("singleBounce", singleBounce);
+	reader.getIfPresent("irradianceFormatIndex", irradianceFormatIndex);
+	reader.getIfPresent("depthFormatIndex", depthFormatIndex);
+	reader.getIfPresent("showLights", showLights);
+	reader.getIfPresent("encloseBounds", encloseBounds);
+	reader.verifyDone();
 }
 
+void IrradianceField::loadNewScene
+   (const String& sceneName, 
+	const shared_ptr<Scene>& scene, 
+	Vector3int32 probeCountsOverride, 
+	float maxProbeDistance, 
+	int irradianceCubeResolutionOverride, 
+	int depthCubeResolutionOverride) 
+{
+	const String& sceneFilename = Scene::sceneNameToFilename(sceneName);
 
-void IrradianceField::loadNewScene(const String& sceneName, const shared_ptr<Scene>& scene, Vector3int32 probeCountsOverride, float maxProbeDistance, int irradianceCubeResolutionOverride, int depthCubeResolutionOverride) {
-    const String& sceneFilename = Scene::sceneNameToFilename(sceneName);
+	// Check if there is an options file for this scene
+	const String& specName = FilePath::mangle(sceneName) + ".LightFieldModelSpecification.Any";
+	const String& irradianceFieldSpecificationFilename = System::findDataFile(specName, false);
+	debugPrintf("%s\n", specName.c_str());
 
-    // Check if there is an options file for this scene
-    const String& specName = FilePath::mangle(sceneName) + ".LightFieldModelSpecification.Any";
-    const String& irradianceFieldSpecificationFilename = System::findDataFile(specName, false);
-    debugPrintf("%s\n", specName.c_str());
+	IrradianceField::Specification spec;
+	bool specExists = FileSystem::exists(irradianceFieldSpecificationFilename);
+	if (specExists) {
+		spec = IrradianceField::Specification(Any::fromFile(irradianceFieldSpecificationFilename));
+	}
 
-    IrradianceField::Specification spec;
-    bool specExists = FileSystem::exists(irradianceFieldSpecificationFilename);
-    if (specExists) {
-        spec = IrradianceField::Specification(Any::fromFile(irradianceFieldSpecificationFilename));
-    }
-    
-    // Spec file didn't set probe dimensions, so compute them here.
-    if (!specExists || spec.probeDimensions == AABox(Point3(0.0f, 0.0f, 0.0f), Point3(1.0f, 1.0f, 1.0f))) {
-        // If a specification file does *not* exist, automatically generate a probe grid from the scene's total bounding box
-        bool boxSet = false;
-        AABox fullBox;
+	// Spec file didn't set probe dimensions, so compute them here.
+	if (!specExists || spec.probeDimensions == AABox(Point3(0.0f, 0.0f, 0.0f), Point3(1.0f, 1.0f, 1.0f))) {
+		// If a specification file does *not* exist, automatically generate a probe grid from the scene's total bounding box
+		bool boxSet = false;
+		AABox fullBox;
 
-        // Iterate over all visible models in the scene to generate the final bounding box
-        Array<shared_ptr<VisibleEntity>> entities;
-        scene->getTypedEntityArray(entities);
-        for (const shared_ptr<VisibleEntity>& entity : entities) {
-            if (! entity->visible() || isNull(entity->model())) {
-                continue;
-            }
+		// Iterate over all visible models in the scene to generate the final bounding box
+		Array<shared_ptr<VisibleEntity>> entities;
+		scene->getTypedEntityArray(entities);
+		for (const shared_ptr<VisibleEntity>& entity : entities) {
+			if (!entity->visible() || isNull(entity->model())) {
+				continue;
+			}
 
-            AABox eBox;
-            entity->getLastBounds(eBox);
+			AABox eBox;
+			entity->getLastBounds(eBox);
 
-            if (boxSet) {
-                fullBox.merge(eBox);
-            } else {
-                boxSet = true;
-                fullBox = eBox;
-            }
-        }
+			if (boxSet) {
+				fullBox.merge(eBox);
+			}
+			else {
+				boxSet = true;
+				fullBox = eBox;
+			}
+		}
 
-        Vector3 boxDims = fullBox.high() - fullBox.low();
+		Vector3 boxDims = fullBox.high() - fullBox.low();
 
-        if (specExists) {
-            m_encloseScene = m_encloseScene || spec.encloseBounds;
-        }
+		if (specExists) {
+			m_encloseScene = m_encloseScene || spec.encloseBounds;
+		}
 
-        // In order to minimize the likelihood of probes being stuck in walls, reduce the dimensions somewhat
-        // to be enclosed in the scene bounding box, or increase them to enclose it.
-        boxDims.x *= m_encloseScene ? 1.1f : 0.9f;
-        boxDims.y *= m_encloseScene ? 1.1f : 0.7f; // Reduce y more since we only have 2 probes in that direction
-        boxDims.z *= m_encloseScene ? 1.1f : 0.9f;
+		// In order to minimize the likelihood of probes being stuck in walls, reduce the dimensions somewhat
+		// to be enclosed in the scene bounding box, or increase them to enclose it.
+		boxDims.x *= m_encloseScene ? 1.1f : 0.9f;
+		boxDims.y *= m_encloseScene ? 1.1f : 0.7f; // Reduce y more since we only have 2 probes in that direction
+		boxDims.z *= m_encloseScene ? 1.1f : 0.9f;
 
-        spec.probeDimensions = AABox(fullBox.center() - boxDims * 0.5f, fullBox.center() + boxDims * 0.5f);
-    }
+		spec.probeDimensions = AABox(fullBox.center() - boxDims * 0.5f, fullBox.center() + boxDims * 0.5f);
+	}
 
-    if ((probeCountsOverride.x > 0) && (probeCountsOverride.y > 0) && (probeCountsOverride.z > 0)) {
-        spec.probeCounts = probeCountsOverride;
-    } else if (maxProbeDistance > 0.0f) {
-        spec.probeCounts = Vector3int32(Vector3(spec.probeDimensions.high() - spec.probeDimensions.low()) / Vector3(maxProbeDistance, maxProbeDistance, maxProbeDistance));
-        debugPrintf("Debug probe counts: %d, %d, %d\n", spec.probeCounts.x, spec.probeCounts.y, spec.probeCounts.z);
-        for (int i = 0; i < 3; ++i) {
-            spec.probeCounts[i] = ceilPow2(spec.probeCounts[i]);
-        }
-    }
+	if ((probeCountsOverride.x > 0) && (probeCountsOverride.y > 0) && (probeCountsOverride.z > 0)) {
+		spec.probeCounts = probeCountsOverride;
+	}
+	else if (maxProbeDistance > 0.0f) {
+		spec.probeCounts = Vector3int32(Vector3(spec.probeDimensions.high() - spec.probeDimensions.low()) / Vector3(maxProbeDistance, maxProbeDistance, maxProbeDistance));
+		debugPrintf("Debug probe counts: %d, %d, %d\n", spec.probeCounts.x, spec.probeCounts.y, spec.probeCounts.z);
+		for (int i = 0; i < 3; ++i) {
+			spec.probeCounts[i] = ceilPow2(spec.probeCounts[i]);
+		}
+	}
 
-    if (irradianceCubeResolutionOverride > 0) {
-        spec.irradianceOctResolution = irradianceCubeResolutionOverride;
-    }
-    if (depthCubeResolutionOverride > 0) {
-        spec.depthOctResolution = depthCubeResolutionOverride;
-    }
-    
-    // Assume the probe counts are powers of two.
-    int totalProbes = spec.probeCounts.x + spec.probeCounts.y + spec.probeCounts.z;
-    // Do not go larger than 8k texture
-    static const int MAX_TEXTURE_SIZE = 4096 * 4096;
-    while ((totalProbes * spec.irradianceOctResolution * spec.irradianceOctResolution) > MAX_TEXTURE_SIZE
-        || (totalProbes * spec.depthOctResolution * spec.depthOctResolution) > MAX_TEXTURE_SIZE) {
-        debugPrintf("Requested probe count is larger than max texture size of %d\n", MAX_TEXTURE_SIZE);
-        // Heuristics. XZ resolution is probably more important than Y resolution,
-        // unless Y resolution is relatively low...
-        if (spec.probeCounts.y > 8) {
-            spec.probeCounts.y /= 2;
-        } else {
-            spec.probeCounts.x /= 2; spec.probeCounts.z /= 2;
-        }
-        totalProbes = spec.probeCounts.x + spec.probeCounts.y + spec.probeCounts.z;
-    }
+	if (irradianceCubeResolutionOverride > 0) {
+		spec.irradianceOctResolution = irradianceCubeResolutionOverride;
+	}
+	if (depthCubeResolutionOverride > 0) {
+		spec.depthOctResolution = depthCubeResolutionOverride;
+	}
 
-    const Vector3 boundingBoxLengths(spec.probeDimensions.high() - spec.probeDimensions.low());
-    // Slightly larger than the diagonal across the grid cell
-    m_maxDistance = (boundingBoxLengths / spec.probeCounts).length() * 1.5f;
+	// Assume the probe counts are powers of two.
+	int totalProbes = spec.probeCounts.x + spec.probeCounts.y + spec.probeCounts.z;
+	// Do not go larger than 8k texture
+	static const int MAX_TEXTURE_SIZE = 4096 * 4096;
+	while ((totalProbes * spec.irradianceOctResolution * spec.irradianceOctResolution) > MAX_TEXTURE_SIZE
+		|| (totalProbes * spec.depthOctResolution * spec.depthOctResolution) > MAX_TEXTURE_SIZE) {
+		debugPrintf("Requested probe count is larger than max texture size of %d\n", MAX_TEXTURE_SIZE);
+		// Heuristics. XZ resolution is probably more important than Y resolution,
+		// unless Y resolution is relatively low...
+		if (spec.probeCounts.y > 8) {
+			spec.probeCounts.y /= 2;
+		}
+		else {
+			spec.probeCounts.x /= 2; spec.probeCounts.z /= 2;
+		}
+		totalProbes = spec.probeCounts.x + spec.probeCounts.y + spec.probeCounts.z;
+	}
 
-    init(spec);
-    allocateIntermediateBuffers();
-    m_probeFormatChanged = true;
-    generateIrradianceProbes(RenderDevice::current);
+	const Vector3 boundingBoxLengths(spec.probeDimensions.high() - spec.probeDimensions.low());
+	// Slightly larger than the diagonal across the grid cell
+	m_maxDistance = (boundingBoxLengths / spec.probeCounts).length() * 1.5f;
 
-    m_texelDebugTexture = Texture::createEmpty("IrradianceField::m_texelDebugTexture", 512, 512, ImageFormat::RGBA32F());
-    // This will be resized
-    m_screenDebugTexture = Texture::createEmpty("IrradianceField::m_screenDebugTexture", 512, 512, ImageFormat::RGBA32F());
-    m_overheadViewDebugTexture = Texture::createEmpty("IrradianceField::m_overheadViewDebugTexture", m_overheadViewDebugResolution, m_overheadViewDebugResolution, ImageFormat::RGBA32F());
+	init(spec);
+	allocateIntermediateBuffers();
+	m_probeFormatChanged = true;
+	generateIrradianceProbes(RenderDevice::current);
 
-    debugPrintf("Load complete.\n");
+	debugPrintf("Load complete.\n");
 }
 
-
-shared_ptr<IrradianceField> IrradianceField::create(const String& sceneName, const shared_ptr<Scene>& scene,
-    Vector3int32 probeCountsOverride, float maxProbeDistance, int irradianceCubeResolutionOverride) {
-    const shared_ptr<IrradianceField>& irradianceField = createShared<IrradianceField>();
-    irradianceField->loadNewScene(sceneName, scene, probeCountsOverride, maxProbeDistance, irradianceCubeResolutionOverride);
-    return irradianceField;
+shared_ptr<IrradianceField> IrradianceField::create
+   (const String& sceneName, 
+	const shared_ptr<Scene>& scene,
+	Vector3int32 probeCountsOverride, 
+	float maxProbeDistance, 
+	int irradianceCubeResolutionOverride) 
+{
+	const shared_ptr<IrradianceField>& irradianceField = createShared<IrradianceField>();
+	irradianceField->loadNewScene(sceneName, scene, probeCountsOverride, maxProbeDistance, irradianceCubeResolutionOverride);
+	return irradianceField;
 }
 
-
-static Color3 desertGradientdesertGradient(float t) {
+static Color3 desertGradientdesertGradient(float t) 
+{
 	const float s = sqrt(clamp(1.0f - (t - 0.4f) / 0.6f, 0.0f, 1.0f));
 	const Color3 sky = (Color3(1, 1, 1).lerp(Color3(0.0f, 0.8f, 1.0f), smoothstep(0.4f, 0.9f, t)) * Color3(s, s, 1.0f)).pow(0.5f);
 	const Color3 land = Color3(0.7f, 0.3f, 0.0f).lerp(Color3(0.85f, 0.75f + max(0.8f - t * 20.0f, 0.0f), 0.5f), square(t / 0.4f));
 	return ((t > 0.4f) ? sky : land).clamp(0.0f, 1.0f) * clamp(1.5f * (1.0f - abs(t - 0.4f)), 0.0f, 1.0f);
 }
 
-
-static Color3 probeCoordVisualizationColor(Point3int32 P) {
-    Color3 c(float(P.x & 1), float(P.y & 1), float(P.z & 1));
-    // Make all probes the same brightness
-    c /= max(c.r + c.g + c.b, 0.01f);
-    return c * 0.6f + Color3(0.2f);
+static Color3 probeCoordVisualizationColor(Point3int32 P) 
+{
+	Color3 c(float(P.x & 1), float(P.y & 1), float(P.z & 1));
+	// Make all probes the same brightness
+	c /= max(c.r + c.g + c.b, 0.01f);
+	return c * 0.6f + Color3(0.2f);
 }
 
-
-void IrradianceField::debugDraw() const {
-    const float radius = 0.075f;
-    for (int i = 0; i < probeCount(); ++i) {
-        Color3 color;
-        const Point3& probeCenter = probeIndexToPosition(i);
-
-        if (App::instance->m_visualizationMode == VisualizationMode::IRRADIANCE_PROBE_CONTRIBUTIONS) {
-            const Point3int32 P = probeIndexToGridIndex(i);
-            color = probeCoordVisualizationColor(P);
-        } else {
-            color = Color3::fromASRGB(0xff007e);
-        }
-       
-        ::debugDraw(std::make_shared<SphereShape>(probeCenter, radius), 0.0f, color * 0.8f, Color4::clear());
-    }
+IrradianceField::IrradianceField()
+{
+	m_sceneTriTree = TriTree::create(true);
 }
-
-
-Matrix3 IrradianceField::debugOverheadViewProjectToPixelMatrix() const {  
-    const float s  = float(m_overheadViewDebugResolution) / 50.0f;
-
-    const float tx = float(m_overheadViewDebugResolution) / 2.0f;
-    const float ty = float(m_overheadViewDebugResolution) / 2.0f;
-
-    return Matrix3(s,  0,  tx,
-                   0, -s,  ty,
-                   0,  0,  1);
-}
-
-
-IrradianceField::IrradianceField() : m_debugVisualization(false), m_debugProbeIndex(0) {
-    m_sceneTriTree = TriTree::create(true);
-}
-
 
 void IrradianceField::setShaderArgs(UniformTable& args, const String& prefix) {
-    alwaysAssertM(endsWith(prefix, "."), "Requires a struct prefix");
+	alwaysAssertM(endsWith(prefix, "."), "Requires a struct prefix");
 
-    Sampler bilinear = Sampler::video();
-    m_irradianceProbes->setShaderArgs(args, prefix + "irradianceProbeGrid", bilinear);
-    m_meanDistProbes->setShaderArgs(args, prefix + "meanMeanSquaredProbeGrid", bilinear);
+	Sampler bilinear = Sampler::video();
+	m_irradianceProbes->setShaderArgs(args, prefix + "irradianceProbeGrid", bilinear);
+	m_meanDistProbes->setShaderArgs(args, prefix + "meanMeanSquaredProbeGrid", bilinear);
 
-    // Uniforms to convert oct to texel and back
-    args.setUniform(prefix + "irradianceTextureWidth", m_irradianceProbes->width());
-    args.setUniform(prefix + "irradianceTextureHeight", m_irradianceProbes->height());
-    args.setUniform(prefix + "depthTextureWidth", m_meanDistProbes->width());
-    args.setUniform(prefix + "depthTextureHeight", m_meanDistProbes->height());
-    args.setUniform(prefix + "irradianceProbeSideLength", irradianceOctSideLength());
-    args.setUniform(prefix + "depthProbeSideLength", depthOctSideLength());
+	// Uniforms to convert oct to texel and back
+	args.setUniform(prefix + "irradianceTextureWidth", m_irradianceProbes->width());
+	args.setUniform(prefix + "irradianceTextureHeight", m_irradianceProbes->height());
+	args.setUniform(prefix + "depthTextureWidth", m_meanDistProbes->width());
+	args.setUniform(prefix + "depthTextureHeight", m_meanDistProbes->height());
+	args.setUniform(prefix + "irradianceProbeSideLength", irradianceOctSideLength());
+	args.setUniform(prefix + "depthProbeSideLength", depthOctSideLength());
 
-    args.setUniform(prefix + "probeCounts", m_specification.probeCounts);
-    args.setUniform(prefix + "probeStartPosition", m_probeStartPosition);
-    args.setUniform(prefix + "probeStep", m_probeStep);
+	args.setUniform(prefix + "probeCounts", m_specification.probeCounts);
+	args.setUniform(prefix + "probeStartPosition", m_probeStartPosition);
+	args.setUniform(prefix + "probeStep", m_probeStep);
 
-    args.setUniform(prefix + "irradianceDistanceBias", m_specification.irradianceDistanceBias);
-    args.setUniform(prefix + "irradianceVarianceBias", m_specification.irradianceVarianceBias);
-    args.setUniform(prefix + "irradianceChebyshevBias", m_specification.irradianceChebyshevBias);
-    args.setUniform(prefix + "normalBias", m_specification.normalBias);
+	args.setUniform(prefix + "irradianceDistanceBias", m_specification.irradianceDistanceBias);
+	args.setUniform(prefix + "irradianceVarianceBias", m_specification.irradianceVarianceBias);
+	args.setUniform(prefix + "irradianceChebyshevBias", m_specification.irradianceChebyshevBias);
+	args.setUniform(prefix + "normalBias", m_specification.normalBias);
 
-    args.setMacro("TRACE_MODE", "WORLD_SPACE_MARCH");
-    args.setMacro("FILL_HOLES", "true");
-    args.setMacro("LIGHTING_MODE", m_lightingMode);
+	args.setMacro("TRACE_MODE", "WORLD_SPACE_MARCH");
+	args.setMacro("FILL_HOLES", "true");
+	args.setMacro("LIGHTING_MODE", m_lightingMode);
 }
 
+void IrradianceField::init(const Specification& spec) 
+{
+	m_name = "Irradiance Field";
 
-void IrradianceField::init(const Specification& spec) {
-    m_name = "Irradiance Field";
+	m_specification = spec;
+	alwaysAssertM(G3D::isPow2(m_specification.probeCounts.x * m_specification.probeCounts.y * m_specification.probeCounts.z),
+		"Probe count must be power of two");
 
-    m_specification = spec;
-    alwaysAssertM(G3D::isPow2(m_specification.probeCounts.x * m_specification.probeCounts.y * m_specification.probeCounts.z),
-        "Probe count must be power of two");
-   
-    const Point3& lo  = spec.probeDimensions.low();
-    const Point3& hi  = spec.probeDimensions.high();
-    m_probeStep          = (hi - lo) / (Vector3(m_specification.probeCounts) - Vector3(1, 1, 1)).max(Vector3(1, 1, 1));
-    m_probeStartPosition = lo;
-    m_oneBounce = spec.singleBounce;
-    m_irradianceFormatIndex = spec.irradianceFormatIndex;
-    m_depthFormatIndex = spec.depthFormatIndex;
+	const Point3& lo = spec.probeDimensions.low();
+	const Point3& hi = spec.probeDimensions.high();
+	m_probeStep = (hi - lo) / (Vector3(m_specification.probeCounts) - Vector3(1, 1, 1)).max(Vector3(1, 1, 1));
+	m_probeStartPosition = lo;
+	m_oneBounce = spec.singleBounce;
+	m_irradianceFormatIndex = spec.irradianceFormatIndex;
+	m_depthFormatIndex = spec.depthFormatIndex;
 
-    // Special case of 1-probe high surface
-    for (int i = 0; i < 3; ++i) {
-        if (m_specification.probeCounts[i] == 1) {
-            m_probeStartPosition[i] = (hi[i] + lo[i]) / 2.0f;
-        }
-    }
+	// Special case of 1-probe high surface
+	for (int i = 0; i < 3; ++i) 
+	{
+		if (m_specification.probeCounts[i] == 1) 
+		{
+			m_probeStartPosition[i] = (hi[i] + lo[i]) / 2.0f;
+		}
+	}
 }
 
-
-Point3int32 IrradianceField::probeIndexToGridIndex(int index) const {
-    const int xIndex = index % m_specification.probeCounts.x;
-    const int yIndex = (index % (m_specification.probeCounts.x * m_specification.probeCounts.y)) / m_specification.probeCounts.x;
-    const int zIndex = index / (m_specification.probeCounts.x * m_specification.probeCounts.y);
-    return Point3int32(xIndex, yIndex, zIndex);
+Point3int32 IrradianceField::probeIndexToGridIndex(int index) const 
+{
+	const int xIndex = index % m_specification.probeCounts.x;
+	const int yIndex = (index % (m_specification.probeCounts.x * m_specification.probeCounts.y)) / m_specification.probeCounts.x;
+	const int zIndex = index / (m_specification.probeCounts.x * m_specification.probeCounts.y);
+	return Point3int32(xIndex, yIndex, zIndex);
 }
 
-
-Point3 IrradianceField::probeIndexToPosition(int index) const {
-    const Point3int32 P = probeIndexToGridIndex(index);
-    return m_probeStep * Vector3(P) + m_probeStartPosition;
+Point3 IrradianceField::probeIndexToPosition(int index) const 
+{
+	const Point3int32 P = probeIndexToGridIndex(index);
+	return m_probeStep * Vector3(P) + m_probeStartPosition;
 }
 
+void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surface>>& surfaceArray) 
+{
+	if (m_sceneDirty && System::time() - lastSceneUpdateTime() > 0.1) 
+	{
+		m_sceneTriTree->setContents(m_scene);
+		m_sceneDirty = false;
+	}
 
-void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surface>>& surfaceArray) {
-    if (m_sceneDirty && System::time() - lastSceneUpdateTime() > 0.1) {
-        m_sceneTriTree->setContents(m_scene);
-        m_sceneDirty = false;
-    }
-
-    generateIrradianceProbes(rd);
+	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
 	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
 	updateIrradianceProbes(rd, m_scene);
 }
 
-
-void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene) {
+void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene) 
+{
 	m_scene = scene;
-    m_sceneDirty = true;
+	m_sceneDirty = true;
 }
 
-
-void IrradianceField::allocateIntermediateBuffers() {
-    const ImageFormat* depthFormat = ImageFormat::DEPTH32();
+void IrradianceField::allocateIntermediateBuffers() 
+{
+	const ImageFormat* depthFormat = ImageFormat::DEPTH32();
 
 	GBuffer::Specification gbufferRTSpec;
 
 	gbufferRTSpec.encoding[GBuffer::Field::LAMBERTIAN].format = ImageFormat::RGBA32F();
 	gbufferRTSpec.encoding[GBuffer::Field::GLOSSY].format = ImageFormat::RGBA32F();
-    gbufferRTSpec.encoding[GBuffer::Field::EMISSIVE].format = ImageFormat::RGBA32F();
-    gbufferRTSpec.encoding[GBuffer::Field::TRANSMISSIVE].format = ImageFormat::RGBA32F();
+	gbufferRTSpec.encoding[GBuffer::Field::EMISSIVE].format = ImageFormat::RGBA32F();
+	gbufferRTSpec.encoding[GBuffer::Field::TRANSMISSIVE].format = ImageFormat::RGBA32F();
 	gbufferRTSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA32F();
 	gbufferRTSpec.encoding[GBuffer::Field::WS_NORMAL] = Texture::Encoding(ImageFormat::RGBA32F(), FrameName::CAMERA, 1.0f, 0.0f);
-    gbufferRTSpec.encoding[GBuffer::Field::DEPTH_AND_STENCIL].format = nullptr;
-    gbufferRTSpec.encoding[GBuffer::Field::CS_NORMAL] = nullptr;
-    gbufferRTSpec.encoding[GBuffer::Field::CS_POSITION] = nullptr;
+	gbufferRTSpec.encoding[GBuffer::Field::DEPTH_AND_STENCIL].format = nullptr;
+	gbufferRTSpec.encoding[GBuffer::Field::CS_NORMAL] = nullptr;
+	gbufferRTSpec.encoding[GBuffer::Field::CS_POSITION] = nullptr;
 
 	int rayDimX = probeCount();
 	int rayDimY = m_specification.irradianceRaysPerProbe;
@@ -348,35 +325,35 @@ void IrradianceField::allocateIntermediateBuffers() {
 	m_irradianceRaysGBuffer->resize(rayDimX, rayDimY);
 }
 
-
 void IrradianceField::renderIndirectIllumination
-   (RenderDevice*                          rd,
-    const shared_ptr<GBuffer>&             gbuffer,
-    const LightingEnvironment&             environment) {
+(RenderDevice*                          rd,
+	const shared_ptr<GBuffer>&             gbuffer,
+	const LightingEnvironment&             environment) 
+{
 
-    m_giFramebuffer->resize(gbuffer->width(), gbuffer->height());
+	m_giFramebuffer->resize(gbuffer->width(), gbuffer->height());
 
-    // Compute GI
-    rd->push2D(m_giFramebuffer); {
-        rd->setGuardBandClip2D(gbuffer->colorGuardBandThickness());
-        // Don't shade the skybox on this pass because it will be forward rendered
-        rd->setDepthTest(RenderDevice::DEPTH_GREATER);
-        Args args;
-        environment.setShaderArgs(args);
-        gbuffer->setShaderArgsRead(args, "gbuffer_");
-        args.setRect(rd->viewport());
-        setShaderArgs(args, "irradianceFieldSurface.");
-        IrradianceProbeSamplingSettings().setShaderArgs(args);
-        m_irradianceRayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
-        m_irradianceRayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
-        args.setUniform("energyPreservation", recursiveEnergyPreservation);
+	// Compute GI
+	rd->push2D(m_giFramebuffer); {
+		rd->setGuardBandClip2D(gbuffer->colorGuardBandThickness());
+		// Don't shade the skybox on this pass because it will be forward rendered
+		rd->setDepthTest(RenderDevice::DEPTH_GREATER);
+		Args args;
+		environment.setShaderArgs(args);
+		gbuffer->setShaderArgsRead(args, "gbuffer_");
+		args.setRect(rd->viewport());
+		setShaderArgs(args, "irradianceFieldSurface.");
+		IrradianceProbeSamplingSettings().setShaderArgs(args);
+		m_irradianceRayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
+		m_irradianceRayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
+		args.setUniform("energyPreservation", recursiveEnergyPreservation);
 
-        LAUNCH_SHADER("GIRenderer_computeIndirect.pix", args);
-    } rd->pop2D();
+		LAUNCH_SHADER("GIRenderer_computeIndirect.pix", args);
+	} rd->pop2D();
 }
 
-
-void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene) {
+void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene) 
+{
 	BEGIN_PROFILER_EVENT("generateIrradianceRays");
 
 	rd->push2D(m_irradianceRaysFB); {
@@ -385,39 +362,39 @@ void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<
 		setShaderArgs(args, "irradianceFieldSurface.");
 		args.setMacro("RAYS_PER_PROBE", m_specification.irradianceRaysPerProbe);
 		args.setRect(rd->viewport());
-        args.setUniform("randomOrientation", Matrix3::fromAxisAngle(Vector3::random(), Random::common().uniform(0.f, 2 * pif())));
+		args.setUniform("randomOrientation", Matrix3::fromAxisAngle(Vector3::random(), Random::common().uniform(0.f, 2 * pif())));
 
-		LAUNCH_SHADER("IrradianceField_generateRandomRays.pix", args);
+		LAUNCH_SHADER("IrradianceField_GenerateRandomRays.pix", args);
 
 	} rd->pop2D();
 
 	END_PROFILER_EVENT();
 }
 
-
 void IrradianceField::sampleAndShadeArbitraryRays
-   (RenderDevice*                       rd,
-    const Array<shared_ptr<Surface>>&   surfaceArray,
-    const shared_ptr<Framebuffer>&      targetFramebuffer,
-    const LightingEnvironment&          environment,
-    const shared_ptr<Texture>&          rayOrigins, 
-    const shared_ptr<Texture>&          rayDirections,
-    const bool                          useProbeIndirect,
-    const bool                          glossyToMatte,
-    const shared_ptr<GBuffer>&          gbuffer,
-    const TriTree::IntersectRayOptions  traceOptions) {
+(RenderDevice*                       rd,
+	const Array<shared_ptr<Surface>>&   surfaceArray,
+	const shared_ptr<Framebuffer>&      targetFramebuffer,
+	const LightingEnvironment&          environment,
+	const shared_ptr<Texture>&          rayOrigins,
+	const shared_ptr<Texture>&          rayDirections,
+	const bool                          useProbeIndirect,
+	const bool                          glossyToMatte,
+	const shared_ptr<GBuffer>&          gbuffer,
+	const TriTree::IntersectRayOptions  traceOptions) 
+{
 
 	BEGIN_PROFILER_EVENT("sampleAndShadeArbitraryRays");
-    m_sceneTriTree->intersectRays(rayOrigins, rayDirections, gbuffer, traceOptions);
+	m_sceneTriTree->intersectRays(rayOrigins, rayDirections, gbuffer, traceOptions);
 
-    renderIndirectIllumination(rd, gbuffer, environment);
+	renderIndirectIllumination(rd, gbuffer, environment);
 
-    // Find the skybox
-    shared_ptr<SkyboxSurface> skyboxSurface;
-    for (const shared_ptr<Surface>& surface : surfaceArray) {
-        skyboxSurface = dynamic_pointer_cast<SkyboxSurface>(surface);
-        if (skyboxSurface) { break; }
-    }
+	// Find the skybox
+	shared_ptr<SkyboxSurface> skyboxSurface;
+	for (const shared_ptr<Surface>& surface : surfaceArray) {
+		skyboxSurface = dynamic_pointer_cast<SkyboxSurface>(surface);
+		if (skyboxSurface) { break; }
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// Perform deferred shading on the GBuffer
@@ -431,18 +408,18 @@ void IrradianceField::sampleAndShadeArbitraryRays
 		e.setShaderArgs(args);
 		gbuffer->setShaderArgsRead(args, "gbuffer_");
 		args.setRect(rd->viewport());
-        
-        args.setMacro("GLOSSY_TO_MATTE", glossyToMatte);
-        args.setUniform("matteIndirectBuffer", useProbeIndirect ?  m_giFramebuffer->texture(0) : Texture::opaqueBlack(), Sampler::buffer());
+
+		args.setMacro("GLOSSY_TO_MATTE", glossyToMatte);
+		args.setUniform("matteIndirectBuffer", useProbeIndirect ? m_giFramebuffer->texture(0) : Texture::opaqueBlack(), Sampler::buffer());
 		args.setMacro("LIGHTING_MODE", LightingMode::DIRECT_INDIRECT);
 
-        args.setMacro("OVERRIDE_SKYBOX", true);
-        skyboxSurface->setShaderArgs(args, "skybox_");
+		args.setMacro("OVERRIDE_SKYBOX", true);
+		skyboxSurface->setShaderArgs(args, "skybox_");
 
-        // When rendering the probes, we don't have ray traced glossy reflections at the probe's primary ray hits,
-        // so use the environment map (won't matter, because we usually kill all glossy reflection for irradiance
-        // probes anyway since it is so viewer dependent).
-        args.setMacro("USE_GLOSSY_INDIRECT_BUFFER", false);
+		// When rendering the probes, we don't have ray traced glossy reflections at the probe's primary ray hits,
+		// so use the environment map (won't matter, because we usually kill all glossy reflection for irradiance
+		// probes anyway since it is so viewer dependent).
+		args.setMacro("USE_GLOSSY_INDIRECT_BUFFER", false);
 		rayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		rayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
 
@@ -452,187 +429,166 @@ void IrradianceField::sampleAndShadeArbitraryRays
 	END_PROFILER_EVENT();
 }
 
-
-void IrradianceField::sampleAndShadeIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene, const Array<shared_ptr<Surface>>& surfaceArray) {
+void IrradianceField::sampleAndShadeIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene, const Array<shared_ptr<Surface>>& surfaceArray) 
+{
 	BEGIN_PROFILER_EVENT("sampleIrradianceRays");
 
-    m_irradianceRaysGBuffer->prepare(rd, 0.0f, 0.0f, Vector2int16(0, 0), Vector2int16(0, 0));
+	m_irradianceRaysGBuffer->prepare(rd, 0.0f, 0.0f, Vector2int16(0, 0), Vector2int16(0, 0));
 
-    // Don't cull backfaces...if a probe looks through a back face (e.g., single-sided ceiling), it will get incorrect results
-    sampleAndShadeArbitraryRays
-       (rd,
-        surfaceArray,
-        m_irradianceRaysShadedFB,
-        scene->lightingEnvironment(),
-        m_irradianceRayOrigins,
-        m_irradianceRayDirections,
-        ! m_oneBounce,
-        m_specification.glossyToMatte,
-        m_irradianceRaysGBuffer,
-        TriTree::DO_NOT_CULL_BACKFACES);
+	// Don't cull backfaces...if a probe looks through a back face (e.g., single-sided ceiling), it will get incorrect results
+	sampleAndShadeArbitraryRays
+	(rd,
+		surfaceArray,
+		m_irradianceRaysShadedFB,
+		scene->lightingEnvironment(),
+		m_irradianceRayOrigins,
+		m_irradianceRayDirections,
+		!m_oneBounce,
+		m_specification.glossyToMatte,
+		m_irradianceRaysGBuffer,
+		TriTree::DO_NOT_CULL_BACKFACES);
 }
 
+void IrradianceField::updateIrradianceProbes(RenderDevice* rd, const shared_ptr<Scene>& scene) 
+{
+	BEGIN_PROFILER_EVENT("updateIrradianceProbes");
 
-void IrradianceField::updateIrradianceProbes(RenderDevice* rd, const shared_ptr<Scene>& scene) {
-    BEGIN_PROFILER_EVENT("updateIrradianceProbes");
+	static const bool IRRADIANCE = true, DEPTH = false;
 
-    static const bool IRRADIANCE = true, DEPTH = false;
+	updateIrradianceProbe(rd, IRRADIANCE);
+	updateIrradianceProbe(rd, DEPTH);
 
-    updateIrradianceProbe(rd, IRRADIANCE);
-    updateIrradianceProbe(rd, DEPTH);
+	m_firstFrame = false;
 
-    m_firstFrame = false;
-
-    END_PROFILER_EVENT();
+	END_PROFILER_EVENT();
 }
 
-
-void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance) {
+void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance) 
+{
 	rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
-        
-        rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
-        // Set the depth test to discard the border pixels
-        rd->setDepthTest(RenderDevice::DepthTest::DEPTH_GREATER);
-        Args args;
 
-        args.setMacro("RAYS_PER_PROBE", m_specification.irradianceRaysPerProbe);
-        args.setUniform("hysteresis", m_firstFrame ? 0.0f : m_specification.hysteresis);
-        args.setUniform("depthSharpness", m_specification.depthSharpness);
-        // Uniforms to compute texel to direction and back in oct format
-        args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
-        args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
-        args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
-        args.setUniform("maxDistance", m_maxDistance);
-        setShaderArgs(args, "irradianceFieldSurface.");
+		rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+		// Set the depth test to discard the border pixels
+		rd->setDepthTest(RenderDevice::DepthTest::DEPTH_GREATER);
+		Args args;
+
+		args.setMacro("RAYS_PER_PROBE", m_specification.irradianceRaysPerProbe);
+		args.setUniform("hysteresis", m_firstFrame ? 0.0f : m_specification.hysteresis);
+		args.setUniform("depthSharpness", m_specification.depthSharpness);
+		// Uniforms to compute texel to direction and back in oct format
+		args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
+		args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
+		args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
+		args.setUniform("maxDistance", m_maxDistance);
+		setShaderArgs(args, "irradianceFieldSurface.");
 		args.setRect(rd->viewport());
 
 		m_irradianceRaysGBuffer->texture(GBuffer::Field::WS_POSITION)->setShaderArgs(args, "rayHitLocations.", Sampler::buffer());
 		m_irradianceRaysGBuffer->texture(GBuffer::Field::WS_NORMAL)->setShaderArgs(args, "rayHitNormals.", Sampler::buffer());
 		m_irradianceRayDirections->setShaderArgs(args, "rayDirections.", Sampler::buffer());
 		m_irradianceRaysShadedFB->texture(0)->setShaderArgs(args, "rayHitRadiance.", Sampler::buffer());
-        
-        // Set skybox args to read on miss
-        dynamic_pointer_cast<Skybox>(m_scene->entity("skybox"))->keyframeArray()[0]->setShaderArgs(args, "skybox_", Sampler::defaults());
+
+		// Set skybox args to read on miss
+		dynamic_pointer_cast<Skybox>(m_scene->entity("skybox"))->keyframeArray()[0]->setShaderArgs(args, "skybox_", Sampler::defaults());
 
 		args.setMacro("OUTPUT_IRRADIANCE", irradiance);
-		LAUNCH_SHADER("IrradianceField_updateIrradianceProbe.pix", args);
+		LAUNCH_SHADER("IrradianceField_UpdateIrradianceProbe.pix", args);
 	} rd->pop2D();
 
-    rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
+	rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
 
-        rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
-        rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
-        Args args;
-        args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
-        args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
+		rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+		rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
+		Args args;
+		args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
+		args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
 
-        args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
-        args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
+		args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
+		args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
 
-        args.setRect(rd->viewport());
-        LAUNCH_SHADER("IrradianceField_copyProbeEdges.pix", args);
-    } rd->pop2D();
+		args.setRect(rd->viewport());
+		LAUNCH_SHADER("IrradianceField_copyProbeEdges.pix", args);
+	} rd->pop2D();
 
 }
 
+void IrradianceField::generateIrradianceProbes(RenderDevice* rd) 
+{
+	const int irradianceSide = irradianceOctSideLength();
+	const int depthSide = depthOctSideLength();
 
-void IrradianceField::generateIrradianceProbes(RenderDevice* rd) {
-    const int irradianceSide = irradianceOctSideLength();
-    const int depthSide = depthOctSideLength();
+	const int rayDimX = m_specification.irradianceRaysPerProbe;
+	const int rayDimY = probeCount();
 
-    const int rayDimX = m_specification.irradianceRaysPerProbe;
-    const int rayDimY = probeCount();
+	// Allocate or reallocate the ray tracing buffers if the probe requirements change
+	if (isNull(m_irradianceRayOrigins) || m_irradianceRayOrigins->width() != rayDimX || m_irradianceRayOrigins->height() != rayDimY) {
+		m_irradianceRayOrigins = Texture::createEmpty("IrradianceField::m_irradianceRayOrigins", rayDimX, rayDimY, ImageFormat::RGBA32F());
+		m_irradianceRayDirections = Texture::createEmpty("IrradianceField::m_irradianceRayDirections", rayDimX, rayDimY, ImageFormat::RGBA32F());
+		m_irradianceRaysFB = Framebuffer::create(m_irradianceRayOrigins, m_irradianceRayDirections);
+		m_irradianceRaysShadedFB = Framebuffer::create(Texture::createEmpty("IrradianceField::m_irradianceRaysShadedFB", rayDimX, rayDimY, ImageFormat::RGB32F()));
+		m_giFramebuffer = Framebuffer::create(Texture::createEmpty("IrradianceField::matte indirect", rayDimX, rayDimY, ImageFormat::RGBA32F()));
+	}
 
-    // Allocate or reallocate the ray tracing buffers if the probe requirements change
-    if (isNull(m_irradianceRayOrigins) || m_irradianceRayOrigins->width() != rayDimX || m_irradianceRayOrigins->height() != rayDimY) {
-        m_irradianceRayOrigins = Texture::createEmpty("IrradianceField::m_irradianceRayOrigins", rayDimX, rayDimY, ImageFormat::RGBA32F());
-        m_irradianceRayDirections = Texture::createEmpty("IrradianceField::m_irradianceRayDirections", rayDimX, rayDimY, ImageFormat::RGBA32F());
-        m_irradianceRaysFB = Framebuffer::create(m_irradianceRayOrigins, m_irradianceRayDirections);
-        m_irradianceRaysShadedFB = Framebuffer::create(Texture::createEmpty("IrradianceField::m_irradianceRaysShadedFB", rayDimX, rayDimY, ImageFormat::RGB32F()));
-        m_giFramebuffer = Framebuffer::create(Texture::createEmpty("IrradianceField::matte indirect", rayDimX, rayDimY, ImageFormat::RGBA32F()));
-    }
+	static int oldIrradianceSide = 0;
+	static int oldDepthSide = 0;
 
-    static int oldIrradianceSide = 0;
-    static int oldDepthSide = 0;
+	// Allocate irradiance/depth probes if this is the first call or the probe resolution changes (mostly for debugging; in normal use,
+	// this is only invoked once anyway)
+	if (isNull(m_irradianceProbes) ||
+		irradianceSide != oldIrradianceSide ||
+		depthSide != oldDepthSide ||
+		m_irradianceProbes->format() != s_irradianceFormats[m_irradianceFormatIndex] ||
+		m_meanDistProbes->format() != s_depthFormats[m_depthFormatIndex] ||
+		m_probeFormatChanged
+		) {
 
-    // Allocate irradiance/depth probes if this is the first call or the probe resolution changes (mostly for debugging; in normal use,
-    // this is only invoked once anyway)
-    if (isNull(m_irradianceProbes) || 
-               irradianceSide != oldIrradianceSide || 
-               depthSide != oldDepthSide || 
-               m_irradianceProbes->format() != s_irradianceFormats[m_irradianceFormatIndex] ||
-               m_meanDistProbes->format() != s_depthFormats[m_depthFormatIndex] ||
-                m_probeFormatChanged
-                ) {
+		// 1-pixel of padding surrounding each probe, 1-pixel padding surrounding entire texture for alignment.
+		const int irradianceWidth = (irradianceSide + 2) * m_specification.probeCounts.x * m_specification.probeCounts.y + 2;
+		const int irradianceHeight = (irradianceSide + 2) * m_specification.probeCounts.z + 2;
 
-        // 1-pixel of padding surrounding each probe, 1-pixel padding surrounding entire texture for alignment.
-        const int irradianceWidth = (irradianceSide + 2) * m_specification.probeCounts.x * m_specification.probeCounts.y + 2;
-        const int irradianceHeight = (irradianceSide + 2) * m_specification.probeCounts.z + 2;
+		const int depthWidth = (depthSide + 2) * m_specification.probeCounts.x * m_specification.probeCounts.y + 2;
+		const int depthHeight = (depthSide + 2) * m_specification.probeCounts.z + 2;
 
-        const int depthWidth = (depthSide + 2) * m_specification.probeCounts.x * m_specification.probeCounts.y + 2;
-        const int depthHeight = (depthSide + 2) * m_specification.probeCounts.z + 2;
+		m_irradianceProbes = Texture::createEmpty("IrradianceField::m_irradianceProbes", irradianceWidth, irradianceHeight,
+			s_irradianceFormats[m_irradianceFormatIndex], Texture::DIM_2D, false, 1);
 
-        m_irradianceProbes = Texture::createEmpty("IrradianceField::m_irradianceProbes", irradianceWidth, irradianceHeight,
-            s_irradianceFormats[m_irradianceFormatIndex], Texture::DIM_2D, false, 1);
+		m_probeFormatChanged = false;
 
-        m_probeFormatChanged = false;
+		m_meanDistProbes = Texture::createEmpty("IrradianceField::m_meanDistProbes", depthWidth, depthHeight,
+			s_depthFormats[m_depthFormatIndex], Texture::DIM_2D, false, 1);
 
-        m_meanDistProbes = Texture::createEmpty("IrradianceField::m_meanDistProbes", depthWidth, depthHeight,
-            s_depthFormats[m_depthFormatIndex], Texture::DIM_2D, false, 1);
+		m_meanDistProbes->visualization.channels = Texture::Visualization::RasL;
+		m_meanDistProbes->visualization.max = 30.0f;
 
-        m_meanDistProbes->visualization.channels = Texture::Visualization::RasL;
-        m_meanDistProbes->visualization.max = 30.0f;
+		m_irradianceProbeFB = Framebuffer::create(m_irradianceProbes);
+		m_meanDistProbeFB = Framebuffer::create(m_meanDistProbes);
 
-        m_irradianceProbeFB = Framebuffer::create(m_irradianceProbes);
-        m_meanDistProbeFB = Framebuffer::create(m_meanDistProbes);
+		m_irradianceProbeFB->set(Framebuffer::AttachmentPoint::DEPTH,
+			Texture::createEmpty("irradianceStencil",
+				m_irradianceProbeFB->width(),
+				m_irradianceProbeFB->height(),
+				ImageFormat::DEPTH32()));
+		m_meanDistProbeFB->set(Framebuffer::AttachmentPoint::DEPTH,
+			Texture::createEmpty("depthStencil",
+				m_meanDistProbeFB->width(),
+				m_meanDistProbeFB->height(),
+				ImageFormat::DEPTH32()));
 
-        m_irradianceProbeFB->set(Framebuffer::AttachmentPoint::DEPTH, 
-                                    Texture::createEmpty("irradianceStencil", 
-                                                         m_irradianceProbeFB->width(), 
-                                                         m_irradianceProbeFB->height(),
-                                                        ImageFormat::DEPTH32()));
-        m_meanDistProbeFB->set(Framebuffer::AttachmentPoint::DEPTH,
-            Texture::createEmpty("depthStencil",
-                m_meanDistProbeFB->width(),
-                m_meanDistProbeFB->height(),
-                ImageFormat::DEPTH32()));
+		// Write 1 outside probe octahedron
+		for (int i = 0; i < 2; ++i) {
+			rd->push2D(i == 0 ? m_irradianceProbeFB : m_meanDistProbeFB); {
 
-        // Write 1 outside probe octahedron
-        for (int i = 0; i < 2; ++i) {
-            rd->push2D(i == 0 ? m_irradianceProbeFB : m_meanDistProbeFB); {
-                
-                rd->setDepthWrite(true);
-                rd->clear();
-                Args args;
+				rd->setDepthWrite(true);
+				rd->clear();
+				Args args;
 
-                args.setUniform("probeSideLength", (i == 0) ? irradianceSide : depthSide);
-                args.setRect(rd->viewport());
-                LAUNCH_SHADER("IrradianceField_writeOnesToProbeBorders.pix", args);
+				args.setUniform("probeSideLength", (i == 0) ? irradianceSide : depthSide);
+				args.setRect(rd->viewport());
+				LAUNCH_SHADER("IrradianceField_writeOnesToProbeBorders.pix", args);
 
-            }; rd->pop2D();
-        }
-    }
-    oldIrradianceSide = irradianceSide;
-    oldDepthSide = depthSide;
-}
-
-
-void IrradianceField::saveVisualization(RenderDevice* rd, const String& basePrefix) {
-    // Static to see in viewer
-    static shared_ptr<Texture> radianceVisualization = Texture::createEmpty("IrradianceField::radianceVisualization", 8192, 8192);
-    static shared_ptr<Texture> depthVisualization = Texture::createEmpty("IrradianceField::depthVisualization", 8192, 8192);
-    static shared_ptr<Texture> normalVisualization = Texture::createEmpty("IrradianceField::normalVisualization", 8192, 8192);
-
-    const shared_ptr<Framebuffer>& fb = Framebuffer::create("IrradianceField::visualizationFB");
-
-    fb->set(Framebuffer::COLOR0, radianceVisualization);
-    fb->set(Framebuffer::COLOR1, depthVisualization);
-    fb->set(Framebuffer::COLOR2, normalVisualization);
-
-    rd->push2D(fb);
-        Args args;
-        setShaderArgs(args, "irradianceFieldSurface.");
-        args.setRect(rd->viewport());
-        LAUNCH_SHADER("IrradianceField_createVisualization.pix", args);
-    rd->pop2D();
+			}; rd->pop2D();
+		}
+	}
+	oldIrradianceSide = irradianceSide;
+	oldDepthSide = depthSide;
 }

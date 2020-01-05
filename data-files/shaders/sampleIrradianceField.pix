@@ -17,7 +17,7 @@
 #include <octahedral.glsl>
 #include <noise.glsl>
 
-#include "util.glsl"
+#include "Util.glsl"
 #include "GridHelpers.glsl"
 
 

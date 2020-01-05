@@ -7,6 +7,9 @@
     <ClCompile Include="source\IrradianceField.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\GIRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\App.h">
@@ -15,31 +18,34 @@
     <ClInclude Include="source\IrradianceField.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\GIRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IrradianceProbeSamplingSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="mainpage.dox" />
-    <None Include="Doxyfile" />
-    <None Include="journal\journal.md.html" />
     <None Include="data-files\shaders\GridHelpers.glsl">
-      <Filter>Shader Files</Filter>
-    </None>
-    <None Include="data-files\shaders\IrradianceField_generateRandomRays.pix">
-      <Filter>Shader Files</Filter>
-    </None>
-    <None Include="data-files\shaders\IrradianceField_updateIrradianceProbe.pix">
-      <Filter>Shader Files</Filter>
-    </None>
-    <None Include="data-files\shaders\sampleIrradianceField.pix">
-      <Filter>Shader Files</Filter>
-    </None>
-    <None Include="data-files\shaders\util.glsl">
       <Filter>Shader Files</Filter>
     </None>
     <None Include="data-files\scenes\Test.Scene.Any">
       <Filter>Scene Files</Filter>
+    </None>
+    <None Include="data-files\shaders\SampleIrradianceField.pix">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shaders\Util.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shaders\IrradianceField_GenerateRandomRays.pix">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shaders\IrradianceField_UpdateIrradianceProbe.pix">
+      <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
