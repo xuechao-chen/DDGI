@@ -91,15 +91,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="source\App.h" />
+    <ClInclude Include="source\IrradianceField.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\App.cpp" />
+    <ClCompile Include="source\IrradianceField.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data-files\test.Scene.Any" />
+    <None Include="data-files\scenes\Test.Scene.Any" />
+    <None Include="data-files\shaders\GridHelpers.glsl" />
+    <None Include="data-files\shaders\IrradianceField_generateRandomRays.pix" />
+    <None Include="data-files\shaders\IrradianceField_updateIrradianceProbe.pix" />
+    <None Include="data-files\shaders\sampleIrradianceField.pix" />
+    <None Include="data-files\shaders\util.glsl" />
     <None Include="Doxyfile" />
     <None Include="journal\journal.md.html" />
     <None Include="mainpage.dox" />

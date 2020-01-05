@@ -1,0 +1,119 @@
+#version 400 // -*- c++ -*-
+#include <g3dmath.glsl>
+#include <Texture/Texture.glsl>
+
+#include "../GridHelpers/GridHelpers.glsl"
+#include <octahedral.glsl>
+// Assumed to be the y dimension of the input textures
+#expect RAYS_PER_PROBE "int"
+
+#expect OUTPUT_IRRADIANCE
+
+uniform Texture2D                 rayDirections;
+uniform Texture2D                 rayHitLocations;
+uniform Texture2D                 rayHitRadiance;
+uniform Texture2D                 rayHitNormals;
+uniform Texture2D                 rayOrigins;
+
+uniform int                       fullTextureWidth;
+uniform int                       fullTextureHeight;
+uniform int                       probeSideLength;
+uniform float                     maxDistance;
+
+uniform samplerCube               skybox_buffer;
+
+uniform vec4                      skybox_readMultiplyFirst;
+uniform vec4                      skybox_readAddSecond;
+
+
+uniform IrradianceField           irradianceField;
+
+uniform float                     hysteresis;
+
+// We make two draw calls to render the irradiance and
+// depth model textures because the two textures will be
+// different sizes.
+//
+// This is either irradiance or depth
+out float4 result;
+
+uniform float depthSharpness;
+
+//const float hysteresis = 0.1f;
+const float epsilon = 1e-6;
+
+
+int probeID(vec2 texelXY) {
+    int probeWithBorderSide = probeSideLength + 2;
+    int probesPerSide = (fullTextureWidth - 2) / probeWithBorderSide;
+    return int(texelXY.x / probeWithBorderSide) + probesPerSide * int(texelXY.y / probeWithBorderSide);
+}
+
+// Compute normalized oct coord, mapping top left of top left pixel to (-1,-1)
+vec2 normalizedOctCoord(ivec2 fragCoord) {
+    int probeWithBorderSide = probeSideLength + 2;
+
+    vec2 octFragCoord = ivec2((fragCoord.x - 2) % probeWithBorderSide, (fragCoord.y - 2) % probeWithBorderSide);
+    // Add back the half pixel to get pixel center normalized coordinates
+    return (vec2(octFragCoord) + vec2(0.5f))*(2.0f / float(probeSideLength)) - vec2(1.0f, 1.0f);
+}
+
+void main() {
+
+    int relativeProbeID = probeID(gl_FragCoord.xy);
+
+    if (relativeProbeID == -1) {
+        result = vec4(0.0f);
+        return;
+    }
+
+    const float energyConservation = 0.95;
+
+    // For each ray
+	for (int r = 0; r < RAYS_PER_PROBE; ++r) {
+		ivec2 C = ivec2(r, relativeProbeID);
+
+		Vector3 rayDirection    = sampleTextureFetch(rayDirections, C, 0).xyz;
+        Color3  rayHitRadiance  = sampleTextureFetch(rayHitRadiance, C, 0).xyz * energyConservation;
+		Point3  rayHitLocation  = sampleTextureFetch(rayHitLocations, C, 0).xyz;
+
+        Point3 probeLocation = sampleTextureFetch(rayOrigins, C, 0).xyz;
+        // Will be zero on a miss
+		Vector3 rayHitNormal    = sampleTextureFetch(rayHitNormals, C, 0).xyz;
+
+        rayHitLocation += rayHitNormal * 0.01f;
+
+		float rayProbeDistance = min(maxDistance, length(probeLocation - rayHitLocation));
+        
+        // Detect misses and force depth
+		if (dot(rayHitNormal, rayHitNormal) < epsilon) {
+            rayProbeDistance = maxDistance;
+        }
+
+        vec3 texelDirection = octDecode(normalizedOctCoord(ivec2(gl_FragCoord.xy)));
+
+#if OUTPUT_IRRADIANCE
+        float weight = max(0.0, dot(texelDirection, rayDirection));
+#else
+        float weight = pow(max(0.0, dot(texelDirection, rayDirection)), depthSharpness);
+#endif
+        if (weight >= epsilon) {
+            // Storing the sum of the weights in alpha temporarily
+#               if OUTPUT_IRRADIANCE
+            result += vec4(rayHitRadiance * weight, weight);
+#               else
+            result += vec4(rayProbeDistance * weight,
+                square(rayProbeDistance) * weight,
+                0.0,
+                weight);
+#               endif
+        }
+		
+	}
+
+    if (result.w > epsilon) {
+        result.xyz /= result.w;
+        result.w = 1.0f - hysteresis;
+    } // if nonzero
+
+}
