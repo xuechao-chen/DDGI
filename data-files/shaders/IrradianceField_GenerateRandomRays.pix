@@ -1,0 +1,59 @@
+/*
+Ray generation shader for the dynamic irradiance probes.
+Uses helpers from the G3D innovation engine (http://g3d.sf.net)
+*/
+
+#version 420 // -*- c++ -*-
+
+#include <g3dmath.glsl>
+#include "GridHelpers.glsl"
+
+// Require this macro to be defined by the shader loader. This is
+// equal to the horizontal dimension of the output texture
+#expect RAYS_PER_PROBE "int"
+
+uniform mat3            randomOrientation;
+uniform IrradianceField irradianceFieldSurface;
+
+out float4              rayOrigin;
+out float4              rayDirection;
+
+Point3 gridCoordToPosition(ivec3 c) {
+    return irradianceFieldSurface.probeStep * Vector3(c) + irradianceFieldSurface.probeStartPosition;
+}
+
+ivec3 probeIndexToGridCoord(int index) {
+    // Slow, but works for any # of probes
+    /*
+    iPos.x = index % L.probeCounts.x;
+    iPos.y = (index % (L.probeCounts.x * L.probeCounts.y)) / L.probeCounts.x;
+    iPos.z = index / (L.probeCounts.x * L.probeCounts.y);
+    */
+
+    // Assumes probeCounts are powers of two.
+    // Saves ~10ms compared to the divisions above
+    // Precomputing the MSB actually slows this code down substantially
+    ivec3 iPos;
+    iPos.x = index & (irradianceFieldSurface.probeCounts.x - 1);
+    iPos.y = (index & ((irradianceFieldSurface.probeCounts.x * irradianceFieldSurface.probeCounts.y) - 1)) >> findMSB(irradianceFieldSurface.probeCounts.x);
+    iPos.z = index >> findMSB(irradianceFieldSurface.probeCounts.x * irradianceFieldSurface.probeCounts.y);
+
+    return iPos;
+}
+
+Point3 probeLocation(int index) {
+    return gridCoordToPosition(irradianceFieldSurface, probeIndexToGridCoord(irradianceFieldSurface, index));
+}
+
+void main() {
+    ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+    
+    int probeID = pixelCoord.y;
+    int rayID   = pixelCoord.x;
+    
+    // This value should be on the order of the normal bias.
+    const float rayMinDistance = 0.08;
+
+    rayOrigin = float4(probeLocation(probeID), rayMinDistance);
+    rayDirection = float4(randomOrientation * sphericalFibonacci(rayID, RAYS_PER_PROBE), inf);
+}
