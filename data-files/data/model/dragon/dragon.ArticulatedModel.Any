@@ -1,0 +1,4 @@
+ArticulatedModel::Specification {
+    filename = "dragon.zip/dragon.obj";
+    preprocess = {transformGeometry("root", Matrix4::yawDegrees(90.0f))};
+}

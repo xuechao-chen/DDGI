@@ -53,6 +53,12 @@
     <None Include="data-files\shaders\GIRenderer_DeferredShade.pix">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="data-files\scenes\Dragon_(Dynamic_Light_Source).Scene.Any">
+      <Filter>Scene Files</Filter>
+    </None>
+    <None Include="data-files\shaders\IrradianceField_CopyProbeEdges.pix">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

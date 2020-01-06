@@ -1,0 +1,22 @@
+uniform int fullTextureWidth;
+uniform int fullTextureHeight;
+uniform int probeSideLength;
+
+uniform sampler2D probeTexture;
+
+const int border = 2;
+
+out vec4 result;
+
+void main()
+{
+	ivec2 P = ivec2(gl_FragCoord.xy);
+
+	if (P.x == 0 || P.y == 0 || P.x == (fullTextureWidth - 1) || P.y == (fullTextureHeight - 1)) return;
+
+	if (P.x % (probeSideLength + border) == 0) { result = texelFetch(probeTexture, ivec2(P.x-1, P.y), 0).rgba; return;}
+	if (P.x % (probeSideLength + border) == 1) { result = texelFetch(probeTexture, ivec2(P.x+1, P.y), 0).rgba; return;}
+																											
+	if (P.y % (probeSideLength + border) == 0) { result = texelFetch(probeTexture, ivec2(P.x, P.y-1), 0).rgba; return;}
+	if (P.y % (probeSideLength + border) == 1) { result = texelFetch(probeTexture, ivec2(P.x, P.y+1), 0).rgba; return;}
+}

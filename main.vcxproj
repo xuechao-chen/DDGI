@@ -110,10 +110,12 @@
     <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="data-files\scenes\Dragon_(Dynamic_Light_Source).Scene.Any" />
     <None Include="data-files\scenes\Test.Scene.Any" />
     <None Include="data-files\shaders\GIRenderer_ComputeIndirect.pix" />
     <None Include="data-files\shaders\GIRenderer_DeferredShade.pix" />
     <None Include="data-files\shaders\GridHelpers.glsl" />
+    <None Include="data-files\shaders\IrradianceField_CopyProbeEdges.pix" />
     <None Include="data-files\shaders\IrradianceField_GenerateRandomRays.pix" />
     <None Include="data-files\shaders\IrradianceField_UpdateIrradianceProbe.pix" />
     <None Include="data-files\shaders\IrradianceField_WriteOnesToProbeBorders.pix" />

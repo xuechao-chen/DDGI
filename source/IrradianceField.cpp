@@ -277,7 +277,7 @@ void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surf
 	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
 	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
-	//updateIrradianceProbes(rd, m_scene);
+	updateIrradianceProbes(rd, m_scene);
 }
 
 void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene)
@@ -490,6 +490,8 @@ void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance)
 
 		m_irradianceRaysGBuffer->texture(GBuffer::Field::WS_POSITION)->setShaderArgs(args, "rayHitLocations.", Sampler::buffer());
 		m_irradianceRaysGBuffer->texture(GBuffer::Field::WS_NORMAL)->setShaderArgs(args, "rayHitNormals.", Sampler::buffer());
+
+		m_irradianceRayOrigins->setShaderArgs(args, "rayOrigins.", Sampler::buffer());
 		m_irradianceRayDirections->setShaderArgs(args, "rayDirections.", Sampler::buffer());
 		m_irradianceRaysShadedFB->texture(0)->setShaderArgs(args, "rayHitRadiance.", Sampler::buffer());
 
@@ -502,7 +504,7 @@ void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance)
 
 	rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
 	
-		rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+		//rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
 		rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
 		Args args;
 		args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
@@ -512,9 +514,8 @@ void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance)
 		args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
 	
 		args.setRect(rd->viewport());
-		LAUNCH_SHADER("IrradianceField_copyProbeEdges.pix", args);
+		LAUNCH_SHADER("shaders/IrradianceField_CopyProbeEdges.pix", args);
 	} rd->pop2D();
-
 }
 
 void IrradianceField::generateIrradianceProbes(RenderDevice* rd)
@@ -572,6 +573,7 @@ void IrradianceField::generateIrradianceProbes(RenderDevice* rd)
 		{
 			rd->push2D(i == 0 ? m_irradianceProbeFB : m_meanDistProbeFB); {
 
+				rd->setColorClearValue(Color4(0, 0, 0, 0));
 				rd->setDepthWrite(true);
 				rd->clear();
 				Args args;
