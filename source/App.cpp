@@ -46,18 +46,22 @@ void App::onInit()
 	setFrameDuration(1.0f / 240.0f);
 
 	String SceneName = "G3D Simple Cornell Box";
-
 	loadScene(SceneName);
-	m_pIrradianceField = IrradianceField::create(SceneName, scene());
-
+	
 	makeGUI();
 }
 
 void App::onGraphics3D(RenderDevice * rd, Array<shared_ptr<Surface>>& surface3D)
 {
-	if (!scene()) m_pIrradianceField->onGraphics3D(rd, surface3D);
+	if (m_pIrradianceField) m_pIrradianceField->onGraphics3D(rd, surface3D);
 
 	GApp::onGraphics3D(rd, surface3D);
+}
+
+void App::onAfterLoadScene(const Any & any, const String & sceneName)
+{
+	m_pIrradianceField = IrradianceField::create(sceneName, scene());
+	m_pIrradianceField->onSceneChanged(scene());
 }
 
 void App::makeGUI()

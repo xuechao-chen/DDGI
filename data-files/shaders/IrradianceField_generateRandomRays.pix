@@ -13,16 +13,13 @@ Uses helpers from the G3D innovation engine (http://g3d.sf.net)
 #expect RAYS_PER_PROBE "int"
 
 uniform mat3            randomOrientation;
-
-Vector3int32            probeCounts;
-Point3                  probeStartPosition;
-Vector3                 probeStep;
+uniform IrradianceField irradianceFieldSurface;
 
 out float4              rayOrigin;
 out float4              rayDirection;
 
 Point3 gridCoordToPosition(ivec3 c) {
-    return probeStep * Vector3(c) + probeStartPosition;
+    return irradianceFieldSurface.probeStep * Vector3(c) + irradianceFieldSurface.probeStartPosition;
 }
 
 ivec3 probeIndexToGridCoord(int index) {
@@ -37,15 +34,15 @@ ivec3 probeIndexToGridCoord(int index) {
     // Saves ~10ms compared to the divisions above
     // Precomputing the MSB actually slows this code down substantially
     ivec3 iPos;
-    iPos.x = index & (probeCounts.x - 1);
-    iPos.y = (index & ((probeCounts.x * probeCounts.y) - 1)) >> findMSB(probeCounts.x);
-    iPos.z = index >> findMSB(probeCounts.x * probeCounts.y);
+    iPos.x = index & (irradianceFieldSurface.probeCounts.x - 1);
+    iPos.y = (index & ((irradianceFieldSurface.probeCounts.x * irradianceFieldSurface.probeCounts.y) - 1)) >> findMSB(irradianceFieldSurface.probeCounts.x);
+    iPos.z = index >> findMSB(irradianceFieldSurface.probeCounts.x * irradianceFieldSurface.probeCounts.y);
 
     return iPos;
 }
 
 Point3 probeLocation(int index) {
-    return gridCoordToPosition(L, probeIndexToGridCoord(L, index));
+    return gridCoordToPosition(irradianceFieldSurface, probeIndexToGridCoord(irradianceFieldSurface, index));
 }
 
 void main() {

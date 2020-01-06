@@ -276,8 +276,8 @@ void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surf
 
 	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
-	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
-	updateIrradianceProbes(rd, m_scene);
+	//sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
+	//updateIrradianceProbes(rd, m_scene);
 }
 
 void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene)
@@ -345,12 +345,14 @@ void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<
 
 		args.setMacro("RAYS_PER_PROBE", m_specification.irradianceRaysPerProbe);
 		args.setRect(rd->viewport());
+		
+		setShaderArgs(args, "irradianceFieldSurface.");
 		args.setUniform("randomOrientation", Matrix3::fromAxisAngle(Vector3::random(), Random::common().uniform(0.f, 2 * pif())));
 		args.setUniform("probeCounts", m_specification.probeCounts);
 		args.setUniform("probeStartPosition", m_probeStartPosition);
 		args.setUniform("probeStep", m_probeStep);
 
-		LAUNCH_SHADER("IrradianceField_GenerateRandomRays.pix", args);
+		LAUNCH_SHADER("shaders/IrradianceField_GenerateRandomRays.pix", args);
 
 	} rd->pop2D();
 

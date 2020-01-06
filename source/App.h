@@ -13,4 +13,5 @@ public:
 
 	virtual void onInit() override;
 	virtual void onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface>>& surface3D) override;
+	virtual void onAfterLoadScene(const Any& any, const String& sceneName) override;
 };
