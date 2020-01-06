@@ -8,7 +8,6 @@ Uses helpers from the G3D innovation engine (http://g3d.sf.net)
 #include <g3dmath.glsl>
 #include "GridHelpers.glsl"
 
-
 // Require this macro to be defined by the shader loader. This is
 // equal to the horizontal dimension of the output texture
 #expect RAYS_PER_PROBE "int"
@@ -16,15 +15,12 @@ Uses helpers from the G3D innovation engine (http://g3d.sf.net)
 uniform mat3            randomOrientation;
 uniform IrradianceField irradianceFieldSurface;
 
-out float4              rayOrigin;
-out float4              rayDirection;
-
-
-
 Vector3int32            probeCounts;
 Point3                  probeStartPosition;
 Vector3                 probeStep;
 
+out float4              rayOrigin;
+out float4              rayDirection;
 
 /**  Generate a spherical fibonacci point
 
