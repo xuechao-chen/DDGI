@@ -276,7 +276,7 @@ void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surf
 
 	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
-	//sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
+	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
 	//updateIrradianceProbes(rd, m_scene);
 }
 
@@ -323,16 +323,14 @@ void IrradianceField::renderIndirectIllumination
 		// Don't shade the skybox on this pass because it will be forward rendered
 		rd->setDepthTest(RenderDevice::DEPTH_GREATER);
 		Args args;
-		environment.setShaderArgs(args);
 		gbuffer->setShaderArgsRead(args, "gbuffer_");
 		args.setRect(rd->viewport());
 		setShaderArgs(args, "irradianceFieldSurface.");
 		IrradianceProbeSamplingSettings().setShaderArgs(args);
 		m_irradianceRayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
-		m_irradianceRayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
 		args.setUniform("energyPreservation", recursiveEnergyPreservation);
 
-		LAUNCH_SHADER("GIRenderer_ComputeIndirect.pix", args);
+		LAUNCH_SHADER("shaders/GIRenderer_ComputeIndirect.pix", args);
 	} rd->pop2D();
 }
 
@@ -348,9 +346,6 @@ void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<
 		
 		setShaderArgs(args, "irradianceFieldSurface.");
 		args.setUniform("randomOrientation", Matrix3::fromAxisAngle(Vector3::random(), Random::common().uniform(0.f, 2 * pif())));
-		args.setUniform("probeCounts", m_specification.probeCounts);
-		args.setUniform("probeStartPosition", m_probeStartPosition);
-		args.setUniform("probeStep", m_probeStep);
 
 		LAUNCH_SHADER("shaders/IrradianceField_GenerateRandomRays.pix", args);
 
