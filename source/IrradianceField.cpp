@@ -277,7 +277,7 @@ void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surf
 	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
 	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
-	//updateIrradianceProbes(rd, m_scene);
+	updateIrradianceProbes(rd, m_scene);
 }
 
 void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene)
@@ -311,7 +311,7 @@ void IrradianceField::allocateIntermediateBuffers()
 }
 
 void IrradianceField::renderIndirectIllumination
-(RenderDevice*                          rd,
+   (RenderDevice*                          rd,
 	const shared_ptr<GBuffer>&             gbuffer,
 	const LightingEnvironment&             environment)
 {
@@ -355,7 +355,7 @@ void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<
 }
 
 void IrradianceField::sampleAndShadeArbitraryRays
-(RenderDevice*                       rd,
+   (RenderDevice*                       rd,
 	const Array<shared_ptr<Surface>>&   surfaceArray,
 	const shared_ptr<Framebuffer>&      targetFramebuffer,
 	const LightingEnvironment&          environment,
@@ -380,7 +380,6 @@ void IrradianceField::sampleAndShadeArbitraryRays
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// Perform deferred shading on the GBuffer
-
 	rd->push2D(targetFramebuffer); {
 		// Disable screen-space effects. Note that this is a COPY we're making in order to mutate it
 		LightingEnvironment e = environment;
@@ -405,7 +404,7 @@ void IrradianceField::sampleAndShadeArbitraryRays
 		rayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		rayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
 
-		LAUNCH_SHADER("GIRenderer_DeferredShade.pix", args);
+		LAUNCH_SHADER("shaders/GIRenderer_DeferredShade.pix", args);
 	} rd->pop2D();
 
 	END_PROFILER_EVENT();
@@ -419,7 +418,7 @@ void IrradianceField::sampleAndShadeIrradianceRays(RenderDevice* rd, const share
 
 	// Don't cull backfaces...if a probe looks through a back face (e.g., single-sided ceiling), it will get incorrect results
 	sampleAndShadeArbitraryRays
-	(rd,
+	    (rd,
 		surfaceArray,
 		m_irradianceRaysShadedFB,
 		scene->lightingEnvironment(),

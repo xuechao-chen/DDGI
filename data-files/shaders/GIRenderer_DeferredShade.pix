@@ -1,0 +1,45 @@
+/*
+  Computes indirect radiance at a surfel based on the surrounding probe cage.
+  Uses helpers from the G3D innovation engine (http://g3d.sf.net)
+*/
+
+#version 420 // -*- c++ -*-
+
+#extension GL_ARB_texture_query_lod : enable
+
+#include <compatibility.glsl>
+#include <Light/Light.glsl>
+#include <GBuffer/GBuffer.glsl>
+
+uniform_GBuffer(gbuffer_);
+
+#include <deferredHelpers.glsl>
+#include <LightingEnvironment/LightingEnvironment_LightUniforms.glsl>
+#include <LightingEnvironment/LightingEnvironment_environmentMapUniforms.glsl>
+
+uniform sampler2D matteIndirectBuffer;
+
+out vec3 result;
+
+void main()
+{
+	ivec2 C = ivec2(gl_FragCoord.xy);
+
+	Vector3 w_o;
+	UniversalMaterialSample surfel;
+	if (!readUniversalMaterialSampleFromGBuffer(C, false, true, w_o, surfel)) {
+		result = surfel.emissive;
+		return;
+	}
+
+	Radiance3 L_scatteredDirect = computeDirectLighting(surfel, w_o, 1.0);
+	Radiance3 L_scatteredIndirect =
+#       ifdef scatteredIndirectLightTexture_notNull
+		texelFetch(C, scatteredIndirectLightTexture_buffer, 0).rgb;
+#       else
+		computeIndirectLighting(surfel, w_o, false, 0);
+#       endif
+	Radiance3 L_matteIndirect = texelFetch(matteIndirectBuffer, C, 0).rgb;
+
+	result = surfel.emissive + L_scatteredDirect + L_scatteredIndirect + L_matteIndirect;
+}
