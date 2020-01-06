@@ -111,9 +111,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data-files\scenes\Test.Scene.Any" />
+    <None Include="data-files\shaders\GIRenderer_ComputeIndirect.pix" />
+    <None Include="data-files\shaders\GIRenderer_DeferredShade.pix" />
     <None Include="data-files\shaders\GridHelpers.glsl" />
     <None Include="data-files\shaders\IrradianceField_GenerateRandomRays.pix" />
     <None Include="data-files\shaders\IrradianceField_UpdateIrradianceProbe.pix" />
+    <None Include="data-files\shaders\IrradianceField_WriteOnesToProbeBorders.pix" />
     <None Include="data-files\shaders\SampleIrradianceField.pix" />
     <None Include="data-files\shaders\Util.glsl" />
   </ItemGroup>

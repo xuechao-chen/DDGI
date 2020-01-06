@@ -47,6 +47,15 @@
     <None Include="data-files\shaders\IrradianceField_UpdateIrradianceProbe.pix">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="data-files\shaders\IrradianceField_WriteOnesToProbeBorders.pix">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shaders\GIRenderer_ComputeIndirect.pix">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shaders\GIRenderer_DeferredShade.pix">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
