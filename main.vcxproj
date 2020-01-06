@@ -115,7 +115,6 @@
     <None Include="data-files\shaders\IrradianceField_GenerateRandomRays.pix" />
     <None Include="data-files\shaders\IrradianceField_UpdateIrradianceProbe.pix" />
     <None Include="data-files\shaders\SampleIrradianceField.pix" />
-    <None Include="data-files\shaders\Util.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

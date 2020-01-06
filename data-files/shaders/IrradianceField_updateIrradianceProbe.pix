@@ -20,15 +20,11 @@ uniform int                       fullTextureHeight;
 uniform int                       probeSideLength;
 uniform float                     maxDistance;
 
-uniform samplerCube               skybox_buffer;
-
-uniform vec4                      skybox_readMultiplyFirst;
-uniform vec4                      skybox_readAddSecond;
-
-
 uniform IrradianceField           irradianceField;
 
 uniform float                     hysteresis;
+uniform float                     depthSharpness;
+const   float                     epsilon = 1e-6;
 
 // We make two draw calls to render the irradiance and
 // depth model textures because the two textures will be
@@ -36,12 +32,6 @@ uniform float                     hysteresis;
 //
 // This is either irradiance or depth
 out float4 result;
-
-uniform float depthSharpness;
-
-//const float hysteresis = 0.1f;
-const float epsilon = 1e-6;
-
 
 int probeID(vec2 texelXY) {
     int probeWithBorderSide = probeSideLength + 2;

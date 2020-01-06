@@ -38,9 +38,6 @@
     <None Include="data-files\shaders\SampleIrradianceField.pix">
       <Filter>Shader Files</Filter>
     </None>
-    <None Include="data-files\shaders\Util.glsl">
-      <Filter>Shader Files</Filter>
-    </None>
     <None Include="data-files\shaders\IrradianceField_GenerateRandomRays.pix">
       <Filter>Shader Files</Filter>
     </None>
