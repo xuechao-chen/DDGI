@@ -452,6 +452,8 @@ void IrradianceField::sampleAndShadeIrradianceRays(RenderDevice* rd, const share
 		m_specification.glossyToMatte,
 		m_irradianceRaysGBuffer,
 		TriTree::DO_NOT_CULL_BACKFACES);
+
+	END_PROFILER_EVENT();
 }
 
 void IrradianceField::updateIrradianceProbes(RenderDevice* rd, const shared_ptr<Scene>& scene)
