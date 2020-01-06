@@ -277,7 +277,7 @@ void IrradianceField::onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surf
 	generateIrradianceProbes(rd);
 	generateIrradianceRays(rd, m_scene);
 	sampleAndShadeIrradianceRays(rd, m_scene, surfaceArray);
-	updateIrradianceProbes(rd, m_scene);
+	//updateIrradianceProbes(rd, m_scene);
 }
 
 void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene)
@@ -367,13 +367,37 @@ void IrradianceField::sampleAndShadeArbitraryRays
 	const TriTree::IntersectRayOptions  traceOptions)
 {
 	BEGIN_PROFILER_EVENT("sampleAndShadeArbitraryRays");
-	m_sceneTriTree->intersectRays(rayOrigins, rayDirections, gbuffer, traceOptions);
+	//m_sceneTriTree->intersectRays(rayOrigins, rayDirections, gbuffer, traceOptions);
+
+	int Width = rayOrigins->width();
+	int Height = rayOrigins->height();
+	shared_ptr<GLPixelTransferBuffer> RTOutBuffers[5];
+	for (int i = 0; i < 5; ++i)
+	{
+		switch (i) {
+		case 2:
+		case 3:
+			RTOutBuffers[i] = GLPixelTransferBuffer::create(Width, Height, ImageFormat::RGBA8());// , nullptr, 1, GL_STREAM_DRAW);
+			break;
+		default:
+			RTOutBuffers[i] = GLPixelTransferBuffer::create(Width, Height, ImageFormat::RGBA32F());// , nullptr, 1, GL_STREAM_DRAW);
+		}
+	}
+
+	m_sceneTriTree->intersectRays(rayOrigins->toPixelTransferBuffer(), rayDirections->toPixelTransferBuffer(), RTOutBuffers);
+
+	gbuffer->texture(GBuffer::Field::WS_POSITION)->update(RTOutBuffers[0]);
+	gbuffer->texture(GBuffer::Field::WS_NORMAL)->update(  RTOutBuffers[1]);
+	gbuffer->texture(GBuffer::Field::LAMBERTIAN)->update( RTOutBuffers[2]);
+	gbuffer->texture(GBuffer::Field::GLOSSY)->update(     RTOutBuffers[3]);
+	gbuffer->texture(GBuffer::Field::EMISSIVE)->update(   RTOutBuffers[4]);
 
 	renderIndirectIllumination(rd, gbuffer, environment);
 
 	// Find the skybox
 	shared_ptr<SkyboxSurface> skyboxSurface;
-	for (const shared_ptr<Surface>& surface : surfaceArray) {
+	for (const shared_ptr<Surface>& surface : surfaceArray) 
+	{
 		skyboxSurface = dynamic_pointer_cast<SkyboxSurface>(surface);
 		if (skyboxSurface) { break; }
 	}
@@ -473,20 +497,20 @@ void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance)
 		dynamic_pointer_cast<Skybox>(m_scene->entity("skybox"))->keyframeArray()[0]->setShaderArgs(args, "skybox_", Sampler::defaults());
 
 		args.setMacro("OUTPUT_IRRADIANCE", irradiance);
-		LAUNCH_SHADER("IrradianceField_UpdateIrradianceProbe.pix", args);
+		LAUNCH_SHADER("shaders/IrradianceField_UpdateIrradianceProbe.pix", args);
 	} rd->pop2D();
 
 	rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
-
+	
 		rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
 		rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
 		Args args;
 		args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
 		args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
-
+	
 		args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
 		args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
-
+	
 		args.setRect(rd->viewport());
 		LAUNCH_SHADER("IrradianceField_copyProbeEdges.pix", args);
 	} rd->pop2D();

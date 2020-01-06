@@ -2,7 +2,7 @@
 #include <g3dmath.glsl>
 #include <Texture/Texture.glsl>
 
-#include "../GridHelpers/GridHelpers.glsl"
+#include "GridHelpers.glsl"
 #include <octahedral.glsl>
 // Assumed to be the y dimension of the input textures
 #expect RAYS_PER_PROBE "int"
