@@ -343,10 +343,12 @@ void IrradianceField::generateIrradianceRays(RenderDevice* rd, const shared_ptr<
 	rd->push2D(m_irradianceRaysFB); {
 		Args args;
 
-		setShaderArgs(args, "irradianceFieldSurface.");
 		args.setMacro("RAYS_PER_PROBE", m_specification.irradianceRaysPerProbe);
 		args.setRect(rd->viewport());
 		args.setUniform("randomOrientation", Matrix3::fromAxisAngle(Vector3::random(), Random::common().uniform(0.f, 2 * pif())));
+		args.setUniform("probeCounts", m_specification.probeCounts);
+		args.setUniform("probeStartPosition", m_probeStartPosition);
+		args.setUniform("probeStep", m_probeStep);
 
 		LAUNCH_SHADER("IrradianceField_GenerateRandomRays.pix", args);
 
