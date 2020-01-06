@@ -79,11 +79,8 @@ protected:
 		shared_ptr<Texture> normals;
 	};
 
-
 	static const Array<const ImageFormat*>     s_irradianceFormats;
 	static const Array<const ImageFormat*>     s_depthFormats;
-
-	const int                           m_overheadViewDebugResolution = 512;
 
 	Specification                       m_specification;
 
@@ -152,7 +149,7 @@ protected:
 	void allocateIntermediateBuffers();
 
 	/** Generate rays for irradiance probe updates. */
-	void generateIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene);
+	void generateIrradianceRays(RenderDevice* r0d, const shared_ptr<Scene>& scene);
 
 	/** Sample rays for irradiance probe updates, returning shaded hit points. */
 	void sampleAndShadeIrradianceRays(RenderDevice* rd, const shared_ptr<Scene>& scene, const Array<shared_ptr<Surface>>& surfaceArray);

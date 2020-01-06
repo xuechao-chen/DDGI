@@ -1,0 +1,12 @@
+uniform int probeSideLength;
+
+const int Border = 2;
+
+void main()
+{
+	if (int(gl_FragCoord.x) % (probeSideLength + Border) < Border ||
+		int(gl_FragCoord.y) % (probeSideLength + Border) < Border)
+	{
+		gl_FragDepth = 1.0;
+	}
+}

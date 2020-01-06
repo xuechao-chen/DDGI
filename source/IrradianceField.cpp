@@ -71,7 +71,7 @@ IrradianceField::Specification::Specification(const Any& any)
 }
 
 void IrradianceField::loadNewScene
-(const String& sceneName,
+   (const String& sceneName,
 	const shared_ptr<Scene>& scene,
 	Vector3int32 probeCountsOverride,
 	float maxProbeDistance,
@@ -558,7 +558,7 @@ void IrradianceField::generateIrradianceProbes(RenderDevice* rd)
 
 				args.setUniform("probeSideLength", (i == 0) ? irradianceSide : depthSide);
 				args.setRect(rd->viewport());
-				LAUNCH_SHADER("IrradianceField_WriteOnesToProbeBorders.pix", args);
+				LAUNCH_SHADER("shaders/IrradianceField_WriteOnesToProbeBorders.pix", args);
 
 			}; rd->pop2D();
 		}

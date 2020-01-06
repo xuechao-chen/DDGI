@@ -45,17 +45,20 @@ void App::onInit()
 
 	setFrameDuration(1.0f / 240.0f);
 
-	showRenderingStats = false;
+	String SceneName = "G3D Simple Cornell Box";
 
-	loadScene("G3D Sponza");
+	loadScene(SceneName);
+	m_pIrradianceField = IrradianceField::create(SceneName, scene());
 
 	makeGUI();
-
-	// For higher-quality screenshots:
-	developerWindow->videoRecordDialog->setScreenShotFormat("PNG");
-	developerWindow->videoRecordDialog->setCaptureGui(false);
 }
 
+void App::onGraphics3D(RenderDevice * rd, Array<shared_ptr<Surface>>& surface3D)
+{
+	if (!scene()) m_pIrradianceField->onGraphics3D(rd, surface3D);
+
+	GApp::onGraphics3D(rd, surface3D);
+}
 
 void App::makeGUI()
 {
