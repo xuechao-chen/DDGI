@@ -329,6 +329,7 @@ void IrradianceField::renderIndirectIllumination
 		IrradianceProbeSamplingSettings().setShaderArgs(args);
 		m_irradianceRayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		args.setUniform("energyPreservation", recursiveEnergyPreservation);
+		args.setMacro("RT_GBUFFER", 1);
 
 		LAUNCH_SHADER("shaders/GIRenderer_ComputeIndirect.pix", args);
 	} rd->pop2D();
@@ -425,6 +426,7 @@ void IrradianceField::sampleAndShadeArbitraryRays
 		// so use the environment map (won't matter, because we usually kill all glossy reflection for irradiance
 		// probes anyway since it is so viewer dependent).
 		args.setMacro("USE_GLOSSY_INDIRECT_BUFFER", false);
+		args.setMacro("RT_GBUFFER", 1);
 		rayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		rayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
 
@@ -504,20 +506,20 @@ void IrradianceField::updateIrradianceProbe(RenderDevice* rd, bool irradiance)
 		LAUNCH_SHADER("shaders/IrradianceField_UpdateIrradianceProbe.pix", args);
 	} rd->pop2D();
 
-	rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
-	
-		//rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
-		rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
-		Args args;
-		args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
-		args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
-	
-		args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
-		args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
-	
-		args.setRect(rd->viewport());
-		LAUNCH_SHADER("shaders/IrradianceField_CopyProbeEdges.pix", args);
-	} rd->pop2D();
+	//rd->push2D(irradiance ? m_irradianceProbeFB : m_meanDistProbeFB); {
+	//
+	//	//rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+	//	rd->setDepthTest(RenderDevice::DEPTH_LEQUAL);
+	//	Args args;
+	//	args.setUniform("fullTextureWidth", irradiance ? m_irradianceProbeFB->width() : m_meanDistProbeFB->width());
+	//	args.setUniform("fullTextureHeight", irradiance ? m_irradianceProbeFB->height() : m_meanDistProbeFB->height());
+	//
+	//	args.setUniform("probeSideLength", irradiance ? irradianceOctSideLength() : depthOctSideLength());
+	//	args.setUniform("probeTexture", irradiance ? m_irradianceProbes : m_meanDistProbes, Sampler::buffer());
+	//
+	//	args.setRect(rd->viewport());
+	//	LAUNCH_SHADER("shaders/IrradianceField_CopyProbeEdges.pix", args);
+	//} rd->pop2D();
 }
 
 void IrradianceField::generateIrradianceProbes(RenderDevice* rd)

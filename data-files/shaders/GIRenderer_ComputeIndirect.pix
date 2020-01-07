@@ -52,7 +52,12 @@ void main()
     Point3 wsPosition = texelFetch(gbuffer_WS_POSITION_buffer, C, 0).xyz;
 
     // View vector
+#ifdef RT_GBUFFER
     Vector3 w_o = normalize(texelFetch(gbuffer_WS_RAY_ORIGIN_buffer, C, 0).xyz - wsPosition);
+#else
+	Vector3 w_o = normalize(gbuffer_camera_frame[3] - wsPosition);
+#endif
+
 
     ivec3 baseGridCoord = baseGridCoord(irradianceFieldSurface, wsPosition);
     Point3 baseProbePos = gridCoordToPosition(irradianceFieldSurface, baseGridCoord);

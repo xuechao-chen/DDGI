@@ -1,9 +1,11 @@
 #pragma once
 #include <G3D/G3D.h>
 #include "IrradianceField.h"
+#include "GIRenderer.h"
 
 class App : public GApp
 {
+	shared_ptr<CGIRenderer>     m_pGIRenderer;
 	shared_ptr<IrradianceField> m_pIrradianceField;
 protected:
 	void makeGUI();

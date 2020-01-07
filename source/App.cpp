@@ -45,8 +45,20 @@ void App::onInit()
 
 	setFrameDuration(1.0f / 240.0f);
 
+	m_gbufferSpecification.encoding[GBuffer::Field::LAMBERTIAN].format = ImageFormat::RGBA32F();
+	m_gbufferSpecification.encoding[GBuffer::Field::GLOSSY].format = ImageFormat::RGBA32F();
+	m_gbufferSpecification.encoding[GBuffer::Field::EMISSIVE].format = ImageFormat::RGBA32F();
+	m_gbufferSpecification.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA32F();
+	m_gbufferSpecification.encoding[GBuffer::Field::WS_NORMAL] = Texture::Encoding(ImageFormat::RGBA32F(), FrameName::CAMERA, 1.0f, 0.0f);
+
+	m_pGIRenderer = dynamic_pointer_cast<CGIRenderer>(CGIRenderer::create());
+	m_pGIRenderer->setDeferredShading(true);
+	m_pGIRenderer->setOrderIndependentTransparency(true);
+
 	String SceneName = "G3D Simple Cornell Box";
 	loadScene(SceneName);
+
+	m_renderer = m_pGIRenderer;
 	
 	makeGUI();
 }
@@ -62,6 +74,7 @@ void App::onAfterLoadScene(const Any & any, const String & sceneName)
 {
 	m_pIrradianceField = IrradianceField::create(sceneName, scene());
 	m_pIrradianceField->onSceneChanged(scene());
+	m_pGIRenderer->setIrradianceField(m_pIrradianceField);
 }
 
 void App::makeGUI()
