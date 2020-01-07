@@ -1,0 +1,72 @@
+# The original Cornell Box in OBJ format.
+# Note that the real box is not a perfect cube, so
+# the faces are imperfect in this data set.
+#
+# Created by Guedis Cardenas and Morgan McGuire at Williams College, 2011
+# Released into the Public Domain.
+#
+# http://graphics.cs.williams.edu/data
+# http://www.graphics.cornell.edu/online/box/data.html
+#
+
+mtllib CornellBox-Original.mtl
+
+## Object floor
+v  -1.5  0.00   1.00
+v   1.5  0.00   1.00
+v   1.5  0.00  -1.00
+v  -1.5  0.00  -1.00
+
+g floor
+usemtl mirror
+f -4 -3 -2 -1
+
+## Object ceiling 
+v  -1.5  2.00   1.00  
+v  -1.5  2.00  -1.00
+v   1.5  2.00  -1.00
+v   1.5  2.00   1.00
+
+g ceiling
+usemtl ceiling
+f -4 -3 -2 -1
+
+## Object backwall  
+v  -1.5  0.00  -1.00 
+v   1.5  0.00  -1.00
+v   1.5  2.00  -1.00
+v  -1.5  2.00  -1.00
+
+g backWall
+usemtl backWall
+f -4 -3 -2 -1
+
+## Object frontwall  
+v  -1.5  0.00   1.00
+v  -1.5  2.00   1.00
+v   1.5  2.00   1.00
+v   1.5  0.00   1.00
+
+g frontWall
+usemtl frontWall
+f -4 -3 -2 -1
+
+## Object leftWall   
+v  -1.5  0.00   1.00
+v  -1.5  0.00  -1.00
+v  -1.5  2.00  -1.00
+v  -1.5  2.00   1.00
+
+g leftWall
+usemtl ceiling
+f -4 -3 -2 -1
+
+## Object rightwall 
+v	1.5  0.00  -1.00   
+v	1.5  0.00   1.00
+v	1.5  2.00   1.00
+v	1.5  2.00  -1.00
+
+g rightWall
+usemtl ceiling
+f -4 -3 -2 -1
