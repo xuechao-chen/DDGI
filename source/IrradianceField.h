@@ -12,7 +12,7 @@ protected:
 	{
 		AABox           probeDimensions = AABox(Point3(0.0f, 0.0f, 0.0f), Point3(1.0f, 1.0f, 1.0f));
 
-		Vector3int32    probeCounts = Vector3int32(4, 2, 4);
+		Vector3int32    probeCounts = Vector3int32(2, 2, 2);
 
 		/** Side length of one face */
 		int             irradianceOctResolution = 8;
@@ -36,7 +36,8 @@ protected:
 			The shadow casting surface is the boundary for shadow, so the nearer an imprecise value is
 			to it the more the light leaks.
 		*/
-		float           normalBias = 0.25f;
+		//float           normalBias = 0.25f;
+		float             normalBias = 0.05f;
 
 		/** Control the weight of new rays when updating each irradiance probe. A value close to 1 will
 			very slowly change the probe textures, improving stability but reducing accuracy when objects

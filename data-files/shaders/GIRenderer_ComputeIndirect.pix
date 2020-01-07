@@ -89,7 +89,7 @@ void main()
         // then samples can pass through thin occluders to the other
         // side (this can only happen if there are MULTIPLE occluders
         // near each other, a wall surface won't pass through itself.)
-        Vector3 probeToPoint = wsPosition - probePos + (wsN + 3.0 * w_o) * irradianceFieldSurface.normalBias;
+		Vector3 probeToPoint = wsPosition - probePos + (wsN + 3.0 * w_o) * irradianceFieldSurface.normalBias;
         Vector3 dir = normalize(-probeToPoint);
 
         // Compute the trilinear weights based on the grid cell vertex to smoothly
@@ -191,5 +191,5 @@ void main()
 #   endif
     netIrradiance *= energyPreservation;
 
-    E_lambertianIndirect = 0.5 * pi * netIrradiance;
+    E_lambertianIndirect = 2 * pi * netIrradiance;
 }

@@ -450,7 +450,6 @@ void IrradianceField::sampleAndShadeArbitraryRays
 		// so use the environment map (won't matter, because we usually kill all glossy reflection for irradiance
 		// probes anyway since it is so viewer dependent).
 		args.setMacro("USE_GLOSSY_INDIRECT_BUFFER", false);
-		args.setMacro("RT_GBUFFER", 1);
 		rayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		rayDirections->setShaderArgs(args, "gbuffer_WS_RAY_DIRECTION_", Sampler::buffer());
 

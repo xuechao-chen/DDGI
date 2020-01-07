@@ -33,13 +33,7 @@ void main()
 	}
 
 	Radiance3 L_scatteredDirect = computeDirectLighting(surfel, w_o, 1.0);
-	Radiance3 L_scatteredIndirect =
-#       ifdef scatteredIndirectLightTexture_notNull
-		texelFetch(C, scatteredIndirectLightTexture_buffer, 0).rgb;
-#       else
-		computeIndirectLighting(surfel, w_o, false, 0);
-#       endif
 	Radiance3 L_matteIndirect = texelFetch(matteIndirectBuffer, C, 0).rgb;
 
-	result = surfel.emissive + L_scatteredDirect + L_scatteredIndirect + L_matteIndirect * surfel.lambertianReflectivity * invPi;
+	result = surfel.emissive + L_scatteredDirect + L_matteIndirect * surfel.lambertianReflectivity * invPi;
 }
