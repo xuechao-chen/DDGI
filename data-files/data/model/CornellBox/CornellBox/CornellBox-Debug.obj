@@ -1,0 +1,160 @@
+# The original Cornell Box in OBJ format.
+# Note that the real box is not a perfect cube, so
+# the faces are imperfect in this data set.
+#
+# Created by Guedis Cardenas and Morgan McGuire at Williams College, 2011
+# Released into the Public Domain.
+#
+# http://graphics.cs.williams.edu/data
+# http://www.graphics.cornell.edu/online/box/data.html
+#
+
+mtllib CornellBox-Debug.mtl
+
+## Object floor
+v  -1.50  0.00   1.00
+v   1.50  0.00   1.00
+v   1.50  0.00  -1.00
+v  -1.50  0.00  -1.00
+
+g floor
+usemtl floor
+f -4 -3 -2 -1
+
+## Object ceiling 
+v  -1.50  2.00   1.00  
+v  -1.50  2.00  -1.00
+v   1.50  2.00  -1.00
+v   1.50  2.00   1.00
+
+g ceiling
+usemtl ceiling
+f -4 -3 -2 -1
+
+## Object backwall  
+v  -1.50  0.00  -1.00 
+v   1.50  0.00  -1.00
+v   1.50  2.00  -1.00
+v  -1.50  2.00  -1.00
+
+g backWall
+usemtl backWall
+f -4 -3 -2 -1
+
+## Object frontwall  
+v  -1.50  0.00   1.00
+v  -1.50  2.00   1.00
+v   1.50  2.00   1.00
+v   1.50  0.00   1.00
+
+g frontWall
+usemtl mirror
+f -4 -3 -2 -1
+
+## Object leftWall   
+v  -1.50  0.00   1.00
+v  -1.50  0.00  -1.00
+v  -1.50  2.00  -1.00
+v  -1.50  2.00   1.00
+
+g leftWall
+usemtl leftWall
+f -4 -3 -2 -1
+
+## Object rightwall 
+v	1.50  0.00  -1.00   
+v	1.50  0.00   1.00
+v	1.50  2.00   1.00
+v	1.50  2.00  -1.00
+
+g rightWall
+usemtl rightWall
+f -4 -3 -2 -1
+
+# ## Object shortBox 
+# usemtl shortBox
+
+# # Top Face 
+# v	0.53  1.25   0.75 
+# v	0.70  1.25   0.17  
+# v	0.13  1.25   0.00
+# v  -0.05  1.25   0.57
+# f -4 -3 -2 -1
+
+# # Left Face 
+# v  -0.05  0.00   0.57
+# v  -0.05  0.60   0.57
+# v   0.13  0.60   0.00 
+# v   0.13  0.00   0.00
+# f -4 -3 -2 -1
+
+# # Front Face
+# v	0.53  0.00   0.75
+# v	0.53  0.60   0.75
+# v  -0.05  0.60   0.57
+# v  -0.05  0.00   0.57
+# f -4 -3 -2 -1
+
+# # Right Face
+# v	0.70  0.00   0.17
+# v	0.70  0.60   0.17
+# v	0.53  0.60   0.75
+# v	0.53  0.00   0.75
+# f -4 -3 -2 -1
+
+# # Back Face
+# v	0.13  0.00   0.00
+# v	0.13  0.60   0.00
+# v	0.70  0.60   0.17
+# v	0.70  0.00   0.17
+# f -4 -3 -2 -1 
+
+# # Bottom Face
+# v	0.53  0.00   0.75 
+# v	0.70  0.00   0.17  
+# v	0.13  0.00   0.00
+# v  -0.05  0.00   0.57
+# f -12 -11 -10 -9
+
+# g shortBox
+# usemtl shortBox
+
+## Object leftMirror  
+v  -1.50  0.00   0.00
+v  -1.50  2.00   0.00
+v  -0.50  2.00   1.00
+v  -0.50  0.00   1.00
+
+g frontWall
+usemtl mirror
+f -4 -3 -2 -1
+
+## Object rightMirror  
+v  0.50  0.00   1.00
+v  0.50  2.00   1.00
+v  1.50  2.00   0.00
+v  1.50  0.00   0.00
+
+g frontWall
+usemtl mirror
+f -4 -3 -2 -1
+
+## Object lightWall1
+v  0.53  0.00   0.00
+v  0.53  0.00  -1.00
+v  0.53  2.00  -1.00
+v  0.53  2.00   0.00
+
+g lightWall1
+usemtl frontWall
+f -4 -3 -2 -1
+
+## Object lightwall2
+v  0.47  0.00   0.00
+v  0.47  0.00  -1.00
+v  0.47  2.00  -1.00
+v  0.47  2.00   0.00
+
+g lightWall2
+usemtl frontWall
+f -1 -2 -3 -4

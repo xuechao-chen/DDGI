@@ -55,7 +55,7 @@ void App::onInit()
 	m_pGIRenderer->setDeferredShading(true);
 	m_pGIRenderer->setOrderIndependentTransparency(true);
 
-	String SceneName = "G3D Simple Cornell Box";
+	String SceneName = "Dragon (Dynamic Light Source)";
 	loadScene(SceneName);
 
 	m_renderer = m_pGIRenderer;

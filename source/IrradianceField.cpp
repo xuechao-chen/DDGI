@@ -420,7 +420,7 @@ void IrradianceField::sampleAndShadeArbitraryRays
 		args.setMacro("LIGHTING_MODE", LightingMode::DIRECT_INDIRECT);
 
 		args.setMacro("OVERRIDE_SKYBOX", true);
-		skyboxSurface->setShaderArgs(args, "skybox_");
+		if (skyboxSurface) skyboxSurface->setShaderArgs(args, "skybox_");
 
 		// When rendering the probes, we don't have ray traced glossy reflections at the probe's primary ray hits,
 		// so use the environment map (won't matter, because we usually kill all glossy reflection for irradiance

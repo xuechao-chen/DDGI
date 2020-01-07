@@ -40,7 +40,7 @@ void CGIRenderer::renderDeferredShading(RenderDevice * rd, const Array<shared_pt
 		args.setUniform("matteIndirectBuffer", notNull(m_pGIFramebuffer) ? m_pGIFramebuffer->texture(0) : Texture::opaqueBlack(), Sampler::buffer());
 
 		args.setMacro("OVERRIDE_SKYBOX", true);
-		skyboxSurface->setShaderArgs(args, "skybox_");
+		if (skyboxSurface) skyboxSurface->setShaderArgs(args, "skybox_");
 
 		LAUNCH_SHADER("shaders/GIRenderer_DeferredShade.pix", args);
 	} rd->pop2D();
