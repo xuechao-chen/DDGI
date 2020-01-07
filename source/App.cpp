@@ -65,7 +65,11 @@ void App::onInit()
 
 void App::onGraphics3D(RenderDevice * rd, Array<shared_ptr<Surface>>& surface3D)
 {
-	if (m_pIrradianceField) m_pIrradianceField->onGraphics3D(rd, surface3D);
+	if (m_pIrradianceField)
+	{
+		m_pIrradianceField->onGraphics3D(rd, surface3D);
+		m_pIrradianceField->debugDraw();
+	}
 
 	GApp::onGraphics3D(rd, surface3D);
 }

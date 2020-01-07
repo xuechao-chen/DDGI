@@ -286,6 +286,30 @@ void IrradianceField::onSceneChanged(const shared_ptr<Scene>& scene)
 	m_sceneDirty = true;
 }
 
+Color3 IrradianceField::probeCoordVisualizationColor(Point3int32 P)
+{
+	Color3 c(float(P.x & 1), float(P.y & 1), float(P.z & 1));
+	// Make all probes the same brightness
+	c /= max(c.r + c.g + c.b, 0.01f);
+	return c * 0.6f + Color3(0.2f);
+}
+
+void IrradianceField::debugDraw() const
+{
+	const float radius = 0.075f;
+	for (int i = 0; i < probeCount(); ++i)
+	{
+		Color3 color;
+		const Point3& probeCenter = probeIndexToPosition(i);
+
+		const Point3int32 P = probeIndexToGridIndex(i);
+		color = probeCoordVisualizationColor(P);
+		//color = Color3::fromASRGB(0xff007e);
+
+		::debugDraw(std::make_shared<SphereShape>(probeCenter, radius), 0.0f, color * 0.8f, Color4::clear());
+	}
+}
+
 void IrradianceField::allocateIntermediateBuffers()
 {
 	const ImageFormat* depthFormat = ImageFormat::DEPTH32();

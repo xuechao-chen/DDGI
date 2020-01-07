@@ -262,4 +262,8 @@ public:
 	virtual void onGraphics3D(RenderDevice* rd, const Array<shared_ptr<Surface>>& surfaceArray);
 
 	virtual void onSceneChanged(const shared_ptr<Scene>& scene);
+
+	static Color3 probeCoordVisualizationColor(Point3int32 P);
+
+	void debugDraw() const;
 };
