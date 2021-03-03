@@ -1,7 +1,4 @@
 #include "IrradianceField.h"
-#include "IrradianceProbeSamplingSettings.h"
-#include "GIRenderer.h"
-#include "App.h"
 
 /** How much should the probes count when shading *themselves*? 1.0 preserves
 	energy perfectly. Lower numbers compensate for small leaks/precision by avoiding
@@ -350,7 +347,6 @@ void IrradianceField::renderIndirectIllumination
 		gbuffer->setShaderArgsRead(args, "gbuffer_");
 		args.setRect(rd->viewport());
 		setShaderArgs(args, "irradianceFieldSurface.");
-		IrradianceProbeSamplingSettings().setShaderArgs(args);
 		m_irradianceRayOrigins->setShaderArgs(args, "gbuffer_WS_RAY_ORIGIN_", Sampler::buffer());
 		args.setUniform("energyPreservation", recursiveEnergyPreservation);
 		args.setMacro("RT_GBUFFER", 1);
